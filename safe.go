@@ -16,6 +16,12 @@ func New[K comparable, V any](selector func(V) K, values ...V) Set[K, V] {
 	}
 }
 
+func NewPrimitive[K comparable](values ...K) Set[K, K] {
+	return &safeSet[K, K]{
+		unsafe: newUnsafePrimitive(values...),
+	}
+}
+
 func (s *safeSet[K, V]) Add(v V) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()

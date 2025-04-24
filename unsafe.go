@@ -5,12 +5,20 @@ import (
 )
 
 type unsafeSet[K comparable, V any] struct {
-	data    map[K]V
+	data     map[K]V
 	selector func(V) K
 }
 
 func NewUnsafe[K comparable, V any](selector func(V) K, values ...V) Set[K, V] {
 	return newUnsafe(selector, values...)
+}
+
+func NewUnsafePrimitive[K comparable](values ...K) Set[K, K] {
+	return newUnsafePrimitive(values...)
+}
+
+func newUnsafePrimitive[K comparable](values ...K) *unsafeSet[K, K] {
+	return newUnsafe(func(k K) K { return k }, values...)
 }
 
 func newUnsafe[K comparable, V any](selector func(V) K, values ...V) *unsafeSet[K, V] {
@@ -24,7 +32,7 @@ func newUnsafe[K comparable, V any](selector func(V) K, values ...V) *unsafeSet[
 
 	return &unsafeSet[K, V]{
 		selector: selector,
-		data:    data,
+		data:     data,
 	}
 }
 
