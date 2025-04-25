@@ -89,14 +89,14 @@ func (s *safeSet[K, V]) ContainsAny(v ...V) bool {
 	return s.unsafe.ContainsAny(v...)
 }
 
-func (s *safeSet[K, V]) Intersects(other Set[K, V]) bool {
+func (s *safeSet[K, V]) Intersects(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.unsafe.Intersects(other)
 }
 
-func (s *safeSet[K, V]) Difference(other Set[K, V]) Set[K, V] {
+func (s *safeSet[K, V]) Difference(other KeySet[K]) Set[K, V] {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -110,14 +110,14 @@ func (s *safeSet[K, V]) Each(f func(V) bool) {
 	s.unsafe.Each(f)
 }
 
-func (s *safeSet[K, V]) Equal(other Set[K, V]) bool {
+func (s *safeSet[K, V]) Equal(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.unsafe.Equal(other)
 }
 
-func (s *safeSet[K, V]) Intersect(other Set[K, V]) Set[K, V] {
+func (s *safeSet[K, V]) Intersect(other KeySet[K]) Set[K, V] {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -131,28 +131,28 @@ func (s *safeSet[K, V]) IsEmpty() bool {
 	return s.unsafe.IsEmpty()
 }
 
-func (s *safeSet[K, V]) IsProperSubset(other Set[K, V]) bool {
+func (s *safeSet[K, V]) IsProperSubset(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.unsafe.IsProperSubset(other)
 }
 
-func (s *safeSet[K, V]) IsProperSuperset(other Set[K, V]) bool {
+func (s *safeSet[K, V]) IsProperSuperset(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.unsafe.IsProperSuperset(other)
 }
 
-func (s *safeSet[K, V]) IsSubset(other Set[K, V]) bool {
+func (s *safeSet[K, V]) IsSubset(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
 	return s.unsafe.IsSubset(other)
 }
 
-func (s *safeSet[K, V]) IsSuperset(other Set[K, V]) bool {
+func (s *safeSet[K, V]) IsSuperset(other KeySet[K]) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 

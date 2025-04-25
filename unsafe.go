@@ -126,18 +126,9 @@ func (k *unsafeSet[K, V]) ContainsAnyKey(keys ...K) bool {
 	return false
 }
 
-func (k *unsafeSet[K, V]) Intersects(other Set[K, V]) bool {
-	if k.Len() < other.Len() {
-		for _, elem := range k.data {
-			if !other.Contains(elem) {
-				return true
-			}
-		}
-		return false
-	}
-
-	for elem := range other.Iter() {
-		if k.Contains(elem) {
+func (k *unsafeSet[K, V]) Intersects(other KeySet[K]) bool {
+	for key := range k.data {
+		if !other.ContainsKeys(key) {
 			return true
 		}
 	}
@@ -145,12 +136,12 @@ func (k *unsafeSet[K, V]) Intersects(other Set[K, V]) bool {
 	return false
 }
 
-func (k *unsafeSet[K, V]) Difference(other Set[K, V]) Set[K, V] {
+func (k *unsafeSet[K, V]) Difference(other KeySet[K]) Set[K, V] {
 	diff := NewUnsafe(k.selector)
 
-	for _, elem := range k.data {
-		if !other.Contains(elem) {
-			diff.Append(elem)
+	for key, value := range k.data {
+		if !other.ContainsKeys(key) {
+			diff.Append(value)
 		}
 	}
 
@@ -165,13 +156,13 @@ func (k *unsafeSet[K, V]) Each(f func(V) bool) {
 	}
 }
 
-func (k *unsafeSet[K, V]) Equal(other Set[K, V]) bool {
+func (k *unsafeSet[K, V]) Equal(other KeySet[K]) bool {
 	if k.Len() != other.Len() {
 		return false
 	}
 
-	for _, elem := range k.data {
-		if !other.Contains(elem) {
+	for key := range k.data {
+		if !other.ContainsKeys(key) {
 			return false
 		}
 	}
@@ -179,21 +170,12 @@ func (k *unsafeSet[K, V]) Equal(other Set[K, V]) bool {
 	return true
 }
 
-func (k *unsafeSet[K, V]) Intersect(other Set[K, V]) Set[K, V] {
+func (k *unsafeSet[K, V]) Intersect(other KeySet[K]) Set[K, V] {
 	intersection := NewUnsafe(k.selector)
 
-	if k.Len() < other.Len() {
-		for _, elem := range k.data {
-			if other.Contains(elem) {
-				intersection.Append(elem)
-			}
-		}
-		return intersection
-	}
-
-	for elem := range other.Iter() {
-		if k.Contains(elem) {
-			intersection.Append(elem)
+	for key, value := range k.data {
+		if other.ContainsKeys(key) {
+			intersection.Append(value)
 		}
 	}
 	return intersection
@@ -203,21 +185,21 @@ func (k *unsafeSet[K, V]) IsEmpty() bool {
 	return k.Len() == 0
 }
 
-func (k *unsafeSet[K, V]) IsProperSubset(other Set[K, V]) bool {
+func (k *unsafeSet[K, V]) IsProperSubset(other KeySet[K]) bool {
 	return k.Len() < other.Len() && k.IsSubset(other)
 }
 
-func (k *unsafeSet[K, V]) IsProperSuperset(other Set[K, V]) bool {
+func (k *unsafeSet[K, V]) IsProperSuperset(other KeySet[K]) bool {
 	return k.Len() > other.Len() && k.IsSuperset(other)
 }
 
-func (k *unsafeSet[K, V]) IsSubset(other Set[K, V]) bool {
+func (k *unsafeSet[K, V]) IsSubset(other KeySet[K]) bool {
 	if k.Len() > other.Len() {
 		return false
 	}
 
-	for _, elem := range k.data {
-		if !other.Contains(elem) {
+	for key := range k.data {
+		if !other.ContainsKeys(key) {
 			return false
 		}
 	}
@@ -225,7 +207,7 @@ func (k *unsafeSet[K, V]) IsSubset(other Set[K, V]) bool {
 	return true
 }
 
-func (k *unsafeSet[K, V]) IsSuperset(other Set[K, V]) bool {
+func (k *unsafeSet[K, V]) IsSuperset(other KeySet[K]) bool {
 	return other.IsSubset(k)
 }
 

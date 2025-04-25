@@ -2,17 +2,9 @@ package kset
 
 import "iter"
 
-// Set defines the interface for a generic set data structure.
-// K is the comparable type used for the underlying map keys.
-// V is the type of the elements stored in the set.
-type Set[K comparable, V any] interface {
-	// Append upserts multiple elements to the set.
-	// It returns the number of elements that were actually added (i.e., were not already present).
-	// Example:
-	//  s := NewPrimitive(1)
-	//  count := s.Append(1, 2, 3) // count is 2
-	Append(values ...V) int
-
+// KeySet defines the interface of the behavior expected from only comparing keys, and not values.
+// This interface is useful for comparing sets that shares the same key type, but not the same value.
+type KeySet[K comparable] interface {
 	// Len returns the number of elements in the set.
 	// Example:
 	//  s := NewPrimitive(1, 2)
@@ -26,21 +18,6 @@ type Set[K comparable, V any] interface {
 	//  length := s.Len() // length is 0
 	Clear()
 
-	// Clone creates a shallow copy of the set.
-	// Example:
-	//  s1 := NewPrimitive(1, 2)
-	//  s2 := s1.Clone() // s2 is {1, 2}, independent of s1
-	//  s2.Add(3)
-	//  // s1 is {1, 2}, s2 is {1, 2, 3}
-	Clone() Set[K, V]
-
-	// Contains checks if all specified elements are present in the set.
-	// It returns true if all elements v are in the set, false otherwise.
-	// Example:
-	//  s := NewPrimitive(1, 2, 3)
-	//  hasAll := s.Contains(1, 2) // hasAll is true
-	//  hasAll = s.Contains(1, 4) // hasAll is false
-	Contains(values ...V) bool
 	// Contains checks if all specified elements are present in the set.
 	// It returns true if all elements v are in the set, false otherwise.
 	// Example:
@@ -53,48 +30,9 @@ type Set[K comparable, V any] interface {
 	// It returns true if at least one element v is in the set, false otherwise.
 	// Example:
 	//  s := NewPrimitive(1, 2)
-	//  hasAny := s.ContainsAny(2, 4) // hasAny is true
-	//  hasAny = s.ContainsAny(4, 5) // hasAny is false
-	ContainsAny(values ...V) bool
-	// ContainsAny checks if any of the specified elements are present in the set.
-	// It returns true if at least one element v is in the set, false otherwise.
-	// Example:
-	//  s := NewPrimitive(1, 2)
 	//  hasAny := s.ContainsAnyKey(2, 4) // hasAny is true
 	//  hasAny = s.ContainsAnyKey(4, 5) // hasAny is false
 	ContainsAnyKey(keys ...K) bool
-
-	// Intersects checks if the set has at least one element in common with another set.
-	// Example:
-	//  s1 := NewPrimitive(1, 2)
-	//  s2 := NewPrimitive(2, 3)
-	//  s3 := NewPrimitive(4, 5)
-	//  intersects := s1.Intersects(s2) // intersects is true
-	//  intersects = s1.Intersects(s3) // intersects is false
-	Intersects(other Set[K, V]) bool
-
-	// Difference returns a new set containing elements that are in the current set but not in the other set.
-	// Example:
-	//  s1 := NewPrimitive(1, 2, 3)
-	//  s2 := NewPrimitive(3, 4, 5)
-	//  diff := s1.Difference(s2) // diff is {1, 2}
-	Difference(other Set[K, V]) Set[K, V]
-
-	// Equal checks if the set is equal to another set (i.e., contains the same elements).
-	// Example:
-	//  s1 := NewPrimitive(1, 2)
-	//  s2 := NewPrimitive(2, 1)
-	//  s3 := NewPrimitive(1, 3)
-	//  isEqual := s1.Equal(s2) // isEqual is true
-	//  isEqual = s1.Equal(s3) // isEqual is false
-	Equal(other Set[K, V]) bool
-
-	// Intersect returns a new set containing elements that are common to both the current set and the other set.
-	// Example:
-	//  s1 := NewPrimitive(1, 2, 3)
-	//  s2 := NewPrimitive(3, 4, 5)
-	//  intersection := s1.Intersect(s2) // intersection is {3}
-	Intersect(other Set[K, V]) Set[K, V]
 
 	// IsEmpty checks if the set contains no elements.
 	// Example:
@@ -112,7 +50,7 @@ type Set[K comparable, V any] interface {
 	//  s3 := NewPrimitive(1, 2)
 	//  isProper := s1.IsProperSubset(s2) // isProper is true
 	//  isProper = s1.IsProperSubset(s3) // isProper is false
-	IsProperSubset(other Set[K, V]) bool
+	IsProperSubset(other KeySet[K]) bool
 
 	// IsProperSuperset checks if the set is a proper superset of another set.
 	// A proper superset is a superset that is not equal to the other set.
@@ -122,7 +60,7 @@ type Set[K comparable, V any] interface {
 	//  s3 := NewPrimitive(1, 2, 3)
 	//  isProper := s1.IsProperSuperset(s2) // isProper is true
 	//  isProper = s1.IsProperSuperset(s3) // isProper is false
-	IsProperSuperset(other Set[K, V]) bool
+	IsProperSuperset(other KeySet[K]) bool
 
 	// IsSubset checks if the set is a subset of another set (i.e., all elements of the current set are also in the other set).
 	// Example:
@@ -131,7 +69,7 @@ type Set[K comparable, V any] interface {
 	//  s3 := NewPrimitive(1, 3)
 	//  isSub := s1.IsSubset(s2) // isSub is true
 	//  isSub = s1.IsSubset(s3) // isSub is false
-	IsSubset(other Set[K, V]) bool
+	IsSubset(other KeySet[K]) bool
 
 	// IsSuperset checks if the set is a superset of another set (i.e., all elements of the other set are also in the current set).
 	// Example:
@@ -140,7 +78,77 @@ type Set[K comparable, V any] interface {
 	//  s3 := NewPrimitive(1, 4)
 	//  isSuper := s1.IsSuperset(s2) // isSuper is true
 	//  isSuper = s1.IsSuperset(s3) // isSuper is false
-	IsSuperset(other Set[K, V]) bool
+	IsSuperset(other KeySet[K]) bool
+
+	// Intersects checks if the set has at least one element in common with another set.
+	// Example:
+	//  s1 := NewPrimitive(1, 2)
+	//  s2 := NewPrimitive(2, 3)
+	//  s3 := NewPrimitive(4, 5)
+	//  intersects := s1.Intersects(s2) // intersects is true
+	//  intersects = s1.Intersects(s3) // intersects is false
+	Intersects(other KeySet[K]) bool
+
+	// Equal checks if the set is equal to another set (i.e., contains the same elements).
+	// Example:
+	//  s1 := NewPrimitive(1, 2)
+	//  s2 := NewPrimitive(2, 1)
+	//  s3 := NewPrimitive(1, 3)
+	//  isEqual := s1.Equal(s2) // isEqual is true
+	//  isEqual = s1.Equal(s3) // isEqual is false
+	Equal(other KeySet[K]) bool
+}
+
+// Set defines the interface for a generic set data structure.
+// K is the comparable type used for the underlying map keys.
+// V is the type of the elements stored in the set.
+type Set[K comparable, V any] interface {
+	KeySet[K]
+
+	// Append upserts multiple elements to the set.
+	// It returns the number of elements that were actually added (i.e., were not already present).
+	// Example:
+	//  s := NewPrimitive(1)
+	//  count := s.Append(1, 2, 3) // count is 2
+	Append(values ...V) int
+
+	// Clone creates a shallow copy of the set.
+	// Example:
+	//  s1 := NewPrimitive(1, 2)
+	//  s2 := s1.Clone() // s2 is {1, 2}, independent of s1
+	//  s2.Add(3)
+	//  // s1 is {1, 2}, s2 is {1, 2, 3}
+	Clone() Set[K, V]
+
+	// Contains checks if all specified elements are present in the set.
+	// It returns true if all elements v are in the set, false otherwise.
+	// Example:
+	//  s := NewPrimitive(1, 2, 3)
+	//  hasAll := s.Contains(1, 2) // hasAll is true
+	//  hasAll = s.Contains(1, 4) // hasAll is false
+	Contains(values ...V) bool
+
+	// ContainsAny checks if any of the specified elements are present in the set.
+	// It returns true if at least one element v is in the set, false otherwise.
+	// Example:
+	//  s := NewPrimitive(1, 2)
+	//  hasAny := s.ContainsAny(2, 4) // hasAny is true
+	//  hasAny = s.ContainsAny(4, 5) // hasAny is false
+	ContainsAny(values ...V) bool
+
+	// Difference returns a new set containing elements that are in the current set but not in the other set.
+	// Example:
+	//  s1 := NewPrimitive(1, 2, 3)
+	//  s2 := NewPrimitive(3, 4, 5)
+	//  diff := s1.Difference(s2) // diff is {1, 2}
+	Difference(other KeySet[K]) Set[K, V]
+
+	// Intersect returns a new set containing elements that are common to both the current set and the other set.
+	// Example:
+	//  s1 := NewPrimitive(1, 2, 3)
+	//  s2 := NewPrimitive(3, 4, 5)
+	//  intersection := s1.Intersect(s2) // intersection is {3}
+	Intersect(other KeySet[K]) Set[K, V]
 
 	// Each executes the given function fn for each element in the set.
 	// Iteration stops if fn returns false.
