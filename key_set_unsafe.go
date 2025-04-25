@@ -7,15 +7,15 @@ import (
 // unsafeKeySet is a non-thread-safe implementation of KeySet using a map.
 type unsafeKeySet[K comparable] map[K]struct{}
 
-// NewKeySetUnsafe creates a new non-thread-safe key-only set.
+// NewUnsafe creates a new non-thread-safe key-only set.
 // Optionally, it can be initialized with one or more keys.
 // The returned set is *not* safe for concurrent use by multiple goroutines.
 //
 // Example:
 //
 //	// Create an unsafe set of integers.
-//	intSet := kset.NewKeySetUnsafe(1, 2, 3, 2) // Resulting set: {1, 2, 3}
-func NewKeySetUnsafe[K comparable](keys ...K) KeyOnlySet[K] {
+//	intSet := kset.NewUnsafe(1, 2, 3, 2) // Resulting set: {1, 2, 3}
+func NewUnsafe[K comparable](keys ...K) KeyOnlySet[K] {
 	return newKeySetUnsafe(keys...)
 }
 
@@ -106,7 +106,7 @@ func (k unsafeKeySet[K]) Intersects(other KeySet[K]) bool {
 
 // Difference returns a new set with keys in this set but not in the other.
 func (k unsafeKeySet[K]) Difference(other KeySet[K]) KeyOnlySet[K] {
-	diff := NewKeySetUnsafe[K]()
+	diff := NewUnsafe[K]()
 	for key := range k {
 		if !other.ContainsKeys(key) {
 			diff.Append(key)
@@ -139,7 +139,7 @@ func (k unsafeKeySet[K]) Equal(other KeySet[K]) bool {
 
 // Intersect returns a new set with keys common to both this set and the other.
 func (k unsafeKeySet[K]) Intersect(other KeySet[K]) KeyOnlySet[K] {
-	intersection := NewKeySetUnsafe[K]()
+	intersection := NewUnsafe[K]()
 
 	for key := range k {
 		if other.ContainsKeys(key) {
@@ -229,7 +229,7 @@ func (k unsafeKeySet[K]) Remove(keys ...K) {
 
 // SymmetricDifference returns a new set with keys in either this set or the other, but not both.
 func (k unsafeKeySet[K]) SymmetricDifference(other KeyOnlySet[K]) KeyOnlySet[K] {
-	sd := NewKeySetUnsafe[K]()
+	sd := NewUnsafe[K]()
 	for key := range k {
 		if !other.ContainsKeys(key) {
 			sd.Append(key)
