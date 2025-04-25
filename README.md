@@ -1,6 +1,7 @@
 # KSET - Generic Set Implementation for Go
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/sonalys/kset.svg)](https://pkg.go.dev/github.com/sonalys/kset)
+[![Tests](https://github.com/sonalys/kset/actions/workflows/test.yml/badge.svg)](https://github.com/sonalys/kset/actions/workflows/test.yml)
 
 `kset` provides a flexible and type-safe implementation of a mathematical set data structure in Go, leveraging generics introduced in Go 1.18.
 
