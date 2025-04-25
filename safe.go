@@ -57,6 +57,20 @@ func (s *safeSet[K, V]) Contains(v ...V) bool {
 	return s.unsafe.Contains(v...)
 }
 
+func (s *safeSet[K, V]) ContainsKeys(keys ...K) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.unsafe.ContainsKeys(keys...)
+}
+
+func (s *safeSet[K, V]) ContainsAnyKey(keys ...K) bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	return s.unsafe.ContainsAnyKey(keys...)
+}
+
 func (s *safeSet[K, V]) ContainsAny(v ...V) bool {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -136,9 +150,16 @@ func (s *safeSet[K, V]) IsSuperset(other Set[K, V]) bool {
 
 func (s *safeSet[K, V]) Iter() iter.Seq[V] {
 	s.lock.RLock()
-	defer s.lock.RUnlock()
 
-	return s.unsafe.Iter()
+	return func(yield func(V) bool) {
+		defer s.lock.RUnlock()
+
+		for value := range s.unsafe.Iter() {
+			if !yield(value) {
+				break
+			}
+		}
+	}
 }
 
 func (s *safeSet[K, V]) Selector(v V) K {

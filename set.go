@@ -53,6 +53,7 @@ type Set[K comparable, V any] interface {
 	//  hasAll := s.Contains(1, 2) // hasAll is true
 	//  hasAll = s.Contains(1, 4) // hasAll is false
 	Contains(values ...V) bool
+	ContainsKeys(keys ...K) bool
 
 	// ContainsAny checks if any of the specified elements are present in the set.
 	// It returns true if at least one element v is in the set, false otherwise.
@@ -62,6 +63,7 @@ type Set[K comparable, V any] interface {
 	//  hasAny := s.ContainsAny(2, 4) // hasAny is true
 	//  hasAny = s.ContainsAny(4, 5) // hasAny is false
 	ContainsAny(values ...V) bool
+	ContainsAnyKey(keys ...K) bool
 
 	// Intersects checks if the set has at least one element in common with another set.
 	// Example:

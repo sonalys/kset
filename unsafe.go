@@ -86,9 +86,27 @@ func (k *unsafeSet[K, V]) Contains(values ...V) bool {
 	return true
 }
 
+func (k *unsafeSet[K, V]) ContainsKeys(keys ...K) bool {
+	for _, key := range keys {
+		if _, ok := k.data[key]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func (k *unsafeSet[K, V]) ContainsAny(values ...V) bool {
 	for _, val := range values {
 		key := k.selector(val)
+		if _, ok := k.data[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (k *unsafeSet[K, V]) ContainsAnyKey(keys ...K) bool {
+	for _, key := range keys {
 		if _, ok := k.data[key]; ok {
 			return true
 		}
