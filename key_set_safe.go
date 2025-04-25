@@ -185,6 +185,7 @@ func (k *keySet[K]) Remove(v ...K) {
 
 func (k *keySet[K]) SymmetricDifference(other KeyOnlySet[K]) KeyOnlySet[K] {
 	k.RLock()
+	defer k.RUnlock()
 
 	return k.data.SymmetricDifference(other)
 }
@@ -197,6 +198,7 @@ func (k *keySet[K]) ToSlice() []K {
 }
 
 func (k *keySet[K]) Union(other KeyOnlySet[K]) KeyOnlySet[K] {
+	k.RLock()
 	defer k.RUnlock()
 
 	return k.data.Union(other)
