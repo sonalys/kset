@@ -59,13 +59,6 @@ func (k *unsafeSet[K, V]) Selector(value V) K {
 	return k.selector(value)
 }
 
-func (k *unsafeSet[K, V]) Add(val V) bool {
-	prevLen := len(k.data)
-	key := k.selector(val)
-	k.data[key] = val
-	return prevLen != len(k.data)
-}
-
 func (k *unsafeSet[K, V]) Append(values ...V) int {
 	prevLen := len(k.data)
 	for _, val := range values {
@@ -89,7 +82,7 @@ func (k *unsafeSet[K, V]) Clone() Set[K, V] {
 	clonedSet := NewUnsafe(k.selector)
 
 	for value := range k.Iter() {
-		clonedSet.Add(value)
+		clonedSet.Append(value)
 	}
 
 	return clonedSet
@@ -157,7 +150,7 @@ func (k *unsafeSet[K, V]) Difference(other Set[K, V]) Set[K, V] {
 
 	for _, elem := range k.data {
 		if !other.Contains(elem) {
-			diff.Add(elem)
+			diff.Append(elem)
 		}
 	}
 
@@ -192,7 +185,7 @@ func (k *unsafeSet[K, V]) Intersect(other Set[K, V]) Set[K, V] {
 	if k.Len() < other.Len() {
 		for _, elem := range k.data {
 			if other.Contains(elem) {
-				intersection.Add(elem)
+				intersection.Append(elem)
 			}
 		}
 		return intersection
@@ -200,7 +193,7 @@ func (k *unsafeSet[K, V]) Intersect(other Set[K, V]) Set[K, V] {
 
 	for elem := range other.Iter() {
 		if k.Contains(elem) {
-			intersection.Add(elem)
+			intersection.Append(elem)
 		}
 	}
 	return intersection
@@ -268,13 +261,13 @@ func (k *unsafeSet[K, V]) SymmetricDifference(other Set[K, V]) Set[K, V] {
 
 	for _, elem := range k.data {
 		if !other.Contains(elem) {
-			sd.Add(elem)
+			sd.Append(elem)
 		}
 	}
 
 	for elem := range other.Iter() {
 		if !k.Contains(elem) {
-			sd.Add(elem)
+			sd.Append(elem)
 		}
 	}
 
@@ -293,7 +286,7 @@ func (k *unsafeSet[K, V]) Union(other Set[K, V]) Set[K, V] {
 	union := k.Clone()
 
 	for elem := range other.Iter() {
-		union.Add(elem)
+		union.Append(elem)
 	}
 
 	return union

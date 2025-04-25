@@ -40,13 +40,6 @@ func NewPrimitive[K comparable](values ...K) Set[K, K] {
 	}
 }
 
-func (s *safeSet[K, V]) Add(v V) bool {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	return s.unsafe.Add(v)
-}
-
 func (s *safeSet[K, V]) Append(v ...V) int {
 	s.lock.Lock()
 	defer s.lock.Unlock()

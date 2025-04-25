@@ -40,8 +40,7 @@ func main() {
     intSet := kset.New(selector)
 
     // Add elements
-    intSet.Add(1)
-    intSet.Append(2, 3, 2) // Append adds multiple, ignores duplicates
+    intSet.Append(1, 2, 3, 1) // Append adds multiple, ignores duplicates
 
     fmt.Printf("Set: %v\n", intSet.ToSlice()) // Order not guaranteed
     fmt.Printf("Length: %d\n", intSet.Len())
@@ -91,49 +90,41 @@ Using Custom Types
 You can use kset with your own structs by providing an appropriate KeyFunc.
 
 ```go
-package main
+package kset_test
 
 import (
-    "fmt"
+	"fmt"
+	"slices"
 
-    "github.com/sonalys/kset"
+	"github.com/sonalys/kset"
 )
 
-type User struct {
-    ID   int
-    Name string
+func ExampleNew() {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	userIDSelector := func(u User) int { return u.ID }
+
+	userSet := kset.New(userIDSelector,
+		User{ID: 1, Name: "Alice"},
+		User{ID: 2, Name: "Bob"},
+	)
+
+	// Adding a user with the same key will upsert the user.
+	// Returns true if the entry is introducing a new key.
+	addedCount := userSet.Append(User{ID: 1, Name: "Alice Smith"})
+	fmt.Printf("Added: %v\n", addedCount)
+
+	elements := userSet.ToSlice()
+	slices.SortFunc(elements, func(a, b User) int {
+		return a.ID - b.ID
+	})
+
+	fmt.Printf("Set Elements: %+v\n", elements)
+	// Output:
+	// Added: 0
+	// Set Elements: [{ID:1 Name:Alice Smith} {ID:2 Name:Bob}]
 }
-
-// Key function extracts the User ID as the key
-func userIDSelector(u User) int {
-    return u.ID
-}
-
-func main() {
-    userSet := kset.New(userIDSelector)
-
-    userSet.Add(User{ID: 1, Name: "Alice"})
-    userSet.Add(User{ID: 2, Name: "Bob"})
-    // Adding a user with the same ID will not change the set
-    added := userSet.Add(User{ID: 1, Name: "Alice Smith"}) // added will be false
-
-    fmt.Printf("User Set Length: %d\n", userSet.Len())
-    fmt.Printf("Added duplicate ID? %t\n", added)
-
-    if user, ok := userSet.Pop(); ok {
-        fmt.Printf("Popped user: %+v\n", user)
-    }
-
-    fmt.Println("Remaining users:")
-    for user := range userSet.Iter() {
-        fmt.Printf("- %+v\n", user)
-    }
-}
-
-// Possible Output:
-// User Set Length: 2
-// Added duplicate ID? false
-// Popped user: {ID:1 Name:Alice}
-// Remaining users:
-// - {ID:2 Name:Bob}
 ```

@@ -6,19 +6,11 @@ import "iter"
 // K is the comparable type used for the underlying map keys.
 // V is the type of the elements stored in the set.
 type Set[K comparable, V any] interface {
-	// Add adds an element v to the set.
-	// It returns true if the element was added, false if it was already present.
-	// Example:
-	//  s := NewPrimitive[int]()
-	//  s.Add(1) // added is true, s is {1}
-	//  added = s.Add(1) // added is false, s is {1}
-	Add(value V) bool
-
-	// Append adds multiple elements to the set.
+	// Append upserts multiple elements to the set.
 	// It returns the number of elements that were actually added (i.e., were not already present).
 	// Example:
-	//  s := NewPrimitive[int]()
-	//  s.Append(1, 2, 1) // count is 2, s is {1, 2}
+	//  s := NewPrimitive(1)
+	//  count := s.Append(1, 2, 3) // count is 2
 	Append(values ...V) int
 
 	// Len returns the number of elements in the set.

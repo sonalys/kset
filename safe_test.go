@@ -11,22 +11,6 @@ func testKeyer(v int) int {
 	return v
 }
 
-func Test_Add(t *testing.T) {
-	t.Run("new value", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
-		added := set.Add(3)
-		assert.True(t, added)
-		assert.True(t, set.Contains(3))
-	})
-
-	t.Run("duplicate", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2, 3)
-		added := set.Add(3)
-		assert.False(t, added)
-		assert.True(t, set.Contains(3))
-	})
-}
-
 func Test_Append(t *testing.T) {
 	t.Run("new value", func(t *testing.T) {
 		set := kset.New(testKeyer, 1, 2)
