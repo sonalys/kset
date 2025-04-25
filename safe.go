@@ -10,12 +10,30 @@ type safeSet[K comparable, V any] struct {
 	unsafe *unsafeSet[K, V]
 }
 
+// New creates a new thread-safe set.
+// It requires a selector function that extracts a comparable key K from a value V.
+// Optionally, it can be initialized with one or more values.
+// The returned set is safe for concurrent use by multiple goroutines.
+//
+// Example:
+//
+//	// Create a set of User structs, using ID as the key.
+//	userSet := kset.New(func(u User) int { return u.ID }, user1, user2)
 func New[K comparable, V any](selector func(V) K, values ...V) Set[K, V] {
 	return &safeSet[K, V]{
 		unsafe: newUnsafe(selector, values...),
 	}
 }
 
+// NewPrimitive creates a new thread-safe set for primitive types (or types where the value itself is the key).
+// It uses an identity function (func(k K) K { return k }) as the selector.
+// Optionally, it can be initialized with one or more values.
+// The returned set is safe for concurrent use by multiple goroutines.
+//
+// Example:
+//
+//	// Create a set of integers.
+//	intSet := kset.NewPrimitive(1, 2, 3, 2) // Resulting set: {1, 2, 3}
 func NewPrimitive[K comparable](values ...K) Set[K, K] {
 	return &safeSet[K, K]{
 		unsafe: newUnsafePrimitive(values...),
