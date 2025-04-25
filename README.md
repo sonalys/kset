@@ -5,15 +5,17 @@
 
 `kset` provides a flexible and type-safe implementation of a mathematical set data structure in Go, leveraging generics introduced in Go 1.18.
 
-It allows you to create sets of any data type (`V`) by providing a `KeyFunc` that extracts a comparable key (`K`) from each element. This enables set operations on complex data types based on specific attributes.
+It allows you to work with sets of keys or key-values.  
+It easily converts from slices  
+The key set and key-value set are compatible with one another  
+You can use sets of different data types as long as their keys are from the same data type.
 
 ## Features
 
-*   **Generic:** Works with any data type for elements (`V`) and keys (`K`).
-*   **Key-Based:** Uniqueness is determined by a user-provided key function (`KeyFunc`).
-*   **Comprehensive API:** Implements standard set operations like Union, Intersection, Difference, Symmetric Difference, Subset/Superset checks, etc.
 *   **Type-Safe:** Compile-time type checking thanks to Go generics.
-*   **Iterable:** Provides an `Iter()` method compatible with Go 1.22+ `iter.Seq`.
+*   **Key-Based:** Uniqueness is determined by a user-provided selector function.
+*   **Comprehensive API:** Implements standard set operations like Union, Intersection, Difference, Symmetric Difference, Subset/Superset checks, etc.
+*   **Iterable:** Provides an `iter.Seq[V]` method compatible with Go 1.22+.
 
 ## Installation
 
