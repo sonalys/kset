@@ -33,57 +33,45 @@ import (
     "github.com/sonalys/kset"
 )
 
-func main() {
-    selector := func(i int) int { return i }
-    // Create a new set of integers.
-    // The key function simply returns the integer itself.
-    intSet := kset.New(selector)
+func ExampleNewPrimitive() {
+	setA := kset.NewPrimitive(1, 2, 3, 1)
 
-    // Add elements
-    intSet.Append(1, 2, 3, 1) // Append adds multiple, ignores duplicates
+	sortSlice := func(slice []int) []int {
+		slices.Sort(slice)
+		return slice
+	}
 
-    fmt.Printf("Set: %v\n", intSet.ToSlice()) // Order not guaranteed
-    fmt.Printf("Length: %d\n", intSet.Len())
-    fmt.Printf("Contains 2? %t\n", intSet.Contains(2))
-    fmt.Printf("Contains 4? %t\n", intSet.Contains(4))
+	fmt.Printf("Set: %v\n", sortSlice(setA.ToSlice()))
+	fmt.Printf("Length: %d\n", setA.Len())
+	fmt.Printf("Contains 2? %t\n", setA.Contains(2))
+	fmt.Printf("Contains 4? %t\n", setA.Contains(4))
 
-    // Create another set
-    otherSet := kset.New(selector)
-    otherSet.Append(3, 4, 5)
+	setB := kset.NewPrimitive(3, 4, 5)
+	setB.Append(3, 4, 5)
 
-    // Set operations
-    union := intSet.Union(otherSet)
-    intersection := intSet.Intersect(otherSet)
-    difference := intSet.Difference(otherSet) // Elements in intSet but not in otherSet
-    symDifference := intSet.SymmetricDifference(otherSet)
+	// Set operations
+	union := setA.Union(setB)
+	intersection := setA.Intersect(setB)
+	difference := setA.Difference(setB) // Elements in intSet but not in otherSet
+	symDifference := setA.SymmetricDifference(setB)
 
-    fmt.Printf("Other Set: %v\n", otherSet.ToSlice())
-    fmt.Printf("Union: %v\n", union.ToSlice())
-    fmt.Printf("Intersection: %v\n", intersection.ToSlice())
-    fmt.Printf("Difference (intSet - otherSet): %v\n", difference.ToSlice())
-    fmt.Printf("Symmetric Difference: %v\n", symDifference.ToSlice())
+	fmt.Printf("Other Set: %v\n", sortSlice(setB.ToSlice()))
+	fmt.Printf("Union: %v\n", sortSlice(union.ToSlice()))
+	fmt.Printf("Intersection: %v\n", sortSlice(intersection.ToSlice()))
+	fmt.Printf("Difference (setA - setB): %v\n", sortSlice(difference.ToSlice()))
+	fmt.Printf("Symmetric Difference: %v\n", sortSlice(symDifference.ToSlice()))
 
-    // Iterate over the set
-    fmt.Println("Iterating:")
-    for v := range intSet.Iter() {
-        fmt.Printf("- %d\n", v)
-    }
+	// Output:
+	// Set: [1 2 3]
+	// Length: 3
+	// Contains 2? true
+	// Contains 4? false
+	// Other Set: [3 4 5]
+	// Union: [1 2 3 4 5]
+	// Intersection: [3]
+	// Difference (setA - setB): [1 2]
+	// Symmetric Difference: [1 2 4 5]
 }
-
-// Possible Output:
-// Set: [1 2 3]
-// Length: 3
-// Contains 2? true
-// Contains 4? false
-// Other Set: [3 4 5]
-// Union: [1 2 3 4 5]
-// Intersection: [3]
-// Difference (intSet - otherSet): [1 2]
-// Symmetric Difference: [1 2 4 5]
-// Iterating:
-// - 1
-// - 2
-// - 3
 ```
 
 Using Custom Types
