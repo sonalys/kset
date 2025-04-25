@@ -13,14 +13,14 @@ func testKeyer(v int) int {
 
 func Test_Append(t *testing.T) {
 	t.Run("new value", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 		count := set.Append(3)
 		assert.Equal(t, 1, count)
 		assert.True(t, set.Contains(3))
 	})
 
 	t.Run("duplicate", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2, 3)
+		set := kset.NewKeyValue(testKeyer, 1, 2, 3)
 		count := set.Append(3)
 		assert.Equal(t, 0, count)
 		assert.True(t, set.Contains(3))
@@ -28,13 +28,13 @@ func Test_Append(t *testing.T) {
 }
 
 func Test_Clear(t *testing.T) {
-	set := kset.New(testKeyer, 1, 2)
+	set := kset.NewKeyValue(testKeyer, 1, 2)
 	set.Clear()
 	assert.Equal(t, 0, set.Len())
 }
 
 func Test_Clone(t *testing.T) {
-	set := kset.New(testKeyer, 1, 2)
+	set := kset.NewKeyValue(testKeyer, 1, 2)
 	clone := set.Clone()
 
 	assert.True(t, set.Equal(clone))
@@ -46,39 +46,39 @@ func Test_Clone(t *testing.T) {
 
 func Test_Contains(t *testing.T) {
 	t.Run("contains", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 		assert.True(t, set.Contains(1))
 	})
 
 	t.Run("not contains", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 		assert.False(t, set.Contains(3))
 	})
 }
 
 func Test_ContainsAny(t *testing.T) {
 	t.Run("contains", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 		assert.True(t, set.ContainsAny(3, 1))
 	})
 
 	t.Run("not contains", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 		assert.False(t, set.ContainsAny(3, 4))
 	})
 }
 
 func Test_Intersects(t *testing.T) {
 	t.Run("intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 3)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 3)
 
 		assert.True(t, set1.Intersects(set2))
 	})
 
 	t.Run("not intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 3, 4)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 3, 4)
 
 		assert.False(t, set1.Intersects(set2))
 	})
@@ -86,15 +86,15 @@ func Test_Intersects(t *testing.T) {
 
 func Test_Difference(t *testing.T) {
 	t.Run("intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 3)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 3)
 
 		assert.ElementsMatch(t, []int{1}, set1.Difference(set2).ToSlice())
 	})
 
 	t.Run("not intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 3, 4)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 3, 4)
 
 		assert.ElementsMatch(t, []int{1, 2}, set1.Difference(set2).ToSlice())
 	})
@@ -102,7 +102,7 @@ func Test_Difference(t *testing.T) {
 
 func Test_Each(t *testing.T) {
 	t.Run("all elements", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 
 		resp := make([]int, 0, 2)
 		set.Each(func(i int) bool {
@@ -114,7 +114,7 @@ func Test_Each(t *testing.T) {
 	})
 
 	t.Run("early return", func(t *testing.T) {
-		set := kset.New(testKeyer, 1, 2)
+		set := kset.NewKeyValue(testKeyer, 1, 2)
 
 		resp := make([]int, 0, 2)
 		set.Each(func(i int) bool {
@@ -128,15 +128,15 @@ func Test_Each(t *testing.T) {
 
 func Test_Equal(t *testing.T) {
 	t.Run("equal", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 1)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 1)
 
 		assert.True(t, set1.Equal(set2))
 	})
 
 	t.Run("not equal", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2, 3)
-		set2 := kset.New(testKeyer, 2, 1)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2, 3)
+		set2 := kset.NewKeyValue(testKeyer, 2, 1)
 
 		assert.False(t, set1.Equal(set2))
 	})
@@ -144,15 +144,15 @@ func Test_Equal(t *testing.T) {
 
 func Test_Intersect(t *testing.T) {
 	t.Run("intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 3)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 3)
 
 		assert.ElementsMatch(t, []int{2}, set1.Intersect(set2).ToSlice())
 	})
 
 	t.Run("not intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 3, 4)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 3, 4)
 
 		assert.Empty(t, set1.Intersect(set2).ToSlice())
 	})
@@ -160,21 +160,21 @@ func Test_Intersect(t *testing.T) {
 
 func Test_IsEmpty(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		set := kset.New(testKeyer)
+		set := kset.NewKeyValue(testKeyer)
 
 		assert.True(t, set.IsEmpty())
 	})
 
 	t.Run("not empty", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 
 		assert.False(t, set.IsEmpty())
 	})
 }
 
 func Test_Subset(t *testing.T) {
-	set1 := kset.New(testKeyer, 1, 2, 3, 4)
-	subset1 := kset.New(testKeyer, 1, 4)
+	set1 := kset.NewKeyValue(testKeyer, 1, 2, 3, 4)
+	subset1 := kset.NewKeyValue(testKeyer, 1, 4)
 
 	t.Run("proper subset", func(t *testing.T) {
 		assert.True(t, subset1.IsProperSubset(set1))
@@ -194,7 +194,7 @@ func Test_Subset(t *testing.T) {
 }
 
 func Test_Iter(t *testing.T) {
-	set := kset.New(testKeyer, 1, 2)
+	set := kset.NewKeyValue(testKeyer, 1, 2)
 	t.Run("all values", func(t *testing.T) {
 		sum := 0
 		for value := range set.Iter() {
@@ -215,13 +215,13 @@ func Test_Iter(t *testing.T) {
 
 func Test_Len(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		set := kset.New(testKeyer)
+		set := kset.NewKeyValue(testKeyer)
 
 		assert.Zero(t, set.Len())
 	})
 
 	t.Run("not empty", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 
 		assert.Equal(t, 1, set.Len())
 	})
@@ -229,7 +229,7 @@ func Test_Len(t *testing.T) {
 
 func Test_Pop(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		set := kset.New(testKeyer)
+		set := kset.NewKeyValue(testKeyer)
 
 		value, ok := set.Pop()
 		assert.False(t, ok)
@@ -237,7 +237,7 @@ func Test_Pop(t *testing.T) {
 	})
 
 	t.Run("not empty", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 
 		value, ok := set.Pop()
 		assert.True(t, ok)
@@ -247,18 +247,18 @@ func Test_Pop(t *testing.T) {
 
 func Test_Remove(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		set := kset.New(testKeyer)
+		set := kset.NewKeyValue(testKeyer)
 		set.Remove(1)
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 		set.Remove(2)
 		assert.Equal(t, 1, set.Len())
 	})
 
 	t.Run("found", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 		set.Remove(1)
 		assert.Equal(t, 0, set.Len())
 	})
@@ -266,15 +266,15 @@ func Test_Remove(t *testing.T) {
 
 func Test_SymmetricDifference(t *testing.T) {
 	t.Run("intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 3)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 3)
 
 		assert.ElementsMatch(t, []int{1, 3}, set1.SymmetricDifference(set2).ToSlice())
 	})
 
 	t.Run("not intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 3, 4)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 3, 4)
 
 		assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.SymmetricDifference(set2).ToSlice())
 	})
@@ -282,22 +282,22 @@ func Test_SymmetricDifference(t *testing.T) {
 
 func Test_ToSlice(t *testing.T) {
 	t.Run("not empty", func(t *testing.T) {
-		set := kset.New(testKeyer, 1)
+		set := kset.NewKeyValue(testKeyer, 1)
 		assert.Equal(t, []int{1}, set.ToSlice())
 	})
 }
 
 func Test_Union(t *testing.T) {
 	t.Run("intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 2, 3)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 2, 3)
 
 		assert.ElementsMatch(t, []int{1, 2, 3}, set1.Union(set2).ToSlice())
 	})
 
 	t.Run("not intersects", func(t *testing.T) {
-		set1 := kset.New(testKeyer, 1, 2)
-		set2 := kset.New(testKeyer, 3, 4)
+		set1 := kset.NewKeyValue(testKeyer, 1, 2)
+		set2 := kset.NewKeyValue(testKeyer, 3, 4)
 
 		assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.Union(set2).ToSlice())
 	})

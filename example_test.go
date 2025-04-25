@@ -7,7 +7,7 @@ import (
 	"github.com/sonalys/kset"
 )
 
-func ExampleNew() {
+func ExampleNewKeyValue() {
 	type User struct {
 		ID   int
 		Name string
@@ -15,7 +15,7 @@ func ExampleNew() {
 
 	userIDSelector := func(u User) int { return u.ID }
 
-	userSet := kset.New(userIDSelector,
+	userSet := kset.NewKeyValue(userIDSelector,
 		User{ID: 1, Name: "Alice"},
 		User{ID: 2, Name: "Bob"},
 	)
@@ -36,8 +36,8 @@ func ExampleNew() {
 	// Set Elements: [{ID:1 Name:Alice Smith} {ID:2 Name:Bob}]
 }
 
-func ExampleNewPrimitive() {
-	setA := kset.NewPrimitive(1, 2, 3, 1)
+func ExampleNew() {
+	setA := kset.New(1, 2, 3, 1)
 
 	sortSlice := func(slice []int) []int {
 		slices.Sort(slice)
@@ -46,10 +46,10 @@ func ExampleNewPrimitive() {
 
 	fmt.Printf("Set: %v\n", sortSlice(setA.ToSlice()))
 	fmt.Printf("Length: %d\n", setA.Len())
-	fmt.Printf("Contains 2? %t\n", setA.Contains(2))
-	fmt.Printf("Contains 4? %t\n", setA.Contains(4))
+	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
+	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
 
-	setB := kset.NewPrimitive(3, 4, 5)
+	setB := kset.New(3, 4, 5)
 	setB.Append(3, 4, 5)
 
 	// Set operations

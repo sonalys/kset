@@ -23,7 +23,8 @@ go get github.com/sonalys/kset
 
 ## Usage
 
-Here's a basic example using a set of integers:
+Using Custom Types
+You can use kset with your own structs by providing an appropriate KeyFunc.
 
 ```go
 package main
@@ -34,8 +35,41 @@ import (
     "github.com/sonalys/kset"
 )
 
-func ExampleNewPrimitive() {
-	setA := kset.NewPrimitive(1, 2, 3, 1)
+func ExampleNewKeyValue() {
+	type User struct {
+		ID   int
+		Name string
+	}
+
+	userIDSelector := func(u User) int { return u.ID }
+
+	userSet := kset.NewKeyValue(userIDSelector,
+		User{ID: 1, Name: "Alice"},
+		User{ID: 2, Name: "Bob"},
+	)
+
+	// Adding a user with the same key will upsert the user.
+	// Returns true if the entry is introducing a new key.
+	addedCount := userSet.Append(User{ID: 1, Name: "Alice Smith"})
+	fmt.Printf("Added: %v\n", addedCount)
+
+	elements := userSet.ToSlice()
+	slices.SortFunc(elements, func(a, b User) int {
+		return a.ID - b.ID
+	})
+
+	fmt.Printf("Set Elements: %+v\n", elements)
+	// Output:
+	// Added: 0
+	// Set Elements: [{ID:1 Name:Alice Smith} {ID:2 Name:Bob}]
+}
+```
+
+Here's a basic example using a set of integers:
+
+```go
+func ExampleNew() {
+	setA := kset.New(1, 2, 3, 1)
 
 	sortSlice := func(slice []int) []int {
 		slices.Sort(slice)
@@ -44,10 +78,10 @@ func ExampleNewPrimitive() {
 
 	fmt.Printf("Set: %v\n", sortSlice(setA.ToSlice()))
 	fmt.Printf("Length: %d\n", setA.Len())
-	fmt.Printf("Contains 2? %t\n", setA.Contains(2))
-	fmt.Printf("Contains 4? %t\n", setA.Contains(4))
+	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
+	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
 
-	setB := kset.NewPrimitive(3, 4, 5)
+	setB := kset.New(3, 4, 5)
 	setB.Append(3, 4, 5)
 
 	// Set operations
@@ -72,48 +106,5 @@ func ExampleNewPrimitive() {
 	// Intersection: [3]
 	// Difference (setA - setB): [1 2]
 	// Symmetric Difference: [1 2 4 5]
-}
-```
-
-Using Custom Types
-You can use kset with your own structs by providing an appropriate KeyFunc.
-
-```go
-package kset_test
-
-import (
-	"fmt"
-	"slices"
-
-	"github.com/sonalys/kset"
-)
-
-func ExampleNew() {
-	type User struct {
-		ID   int
-		Name string
-	}
-
-	userIDSelector := func(u User) int { return u.ID }
-
-	userSet := kset.New(userIDSelector,
-		User{ID: 1, Name: "Alice"},
-		User{ID: 2, Name: "Bob"},
-	)
-
-	// Adding a user with the same key will upsert the user.
-	// Returns true if the entry is introducing a new key.
-	addedCount := userSet.Append(User{ID: 1, Name: "Alice Smith"})
-	fmt.Printf("Added: %v\n", addedCount)
-
-	elements := userSet.ToSlice()
-	slices.SortFunc(elements, func(a, b User) int {
-		return a.ID - b.ID
-	})
-
-	fmt.Printf("Set Elements: %+v\n", elements)
-	// Output:
-	// Added: 0
-	// Set Elements: [{ID:1 Name:Alice Smith} {ID:2 Name:Bob}]
 }
 ```
