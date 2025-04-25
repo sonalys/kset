@@ -110,7 +110,7 @@ func (k *unsafeKeyValueSet[K, V]) ContainsAnyKey(keys ...K) bool {
 
 func (k *unsafeKeyValueSet[K, V]) Intersects(other KeySet[K]) bool {
 	for key := range k.data {
-		if !other.ContainsKeys(key) {
+		if other.ContainsKeys(key) {
 			return true
 		}
 	}
