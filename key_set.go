@@ -288,17 +288,7 @@ func (k keySet[K, S]) IsSubset(other Set[K]) bool {
 
 // IsSuperset checks if this set is a superset of the other set.
 func (k keySet[K, S]) IsSuperset(other Set[K]) bool {
-	if k.Len() > other.Len() {
-		return false
-	}
-
-	for key := range k.store.Iter() {
-		if !other.ContainsKeys(key) {
-			return false
-		}
-	}
-
-	return true
+	return other.IsSubset(k)
 }
 
 // Iter returns an iterator for the keys in the set.
@@ -321,7 +311,7 @@ func (k keySet[K, S]) IterKeys() iter.Seq[K] {
 // The second return value indicates if a key was removed (true) or if the set was empty (false).
 func (k keySet[K, S]) Pop() (K, bool) {
 	for key := range k.store.Iter() {
-		k.store.Delete(key)
+		defer k.store.Delete(key)
 		return key, true
 	}
 	var zero K
