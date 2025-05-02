@@ -6,9 +6,8 @@ import (
 )
 
 type safeMapStore[K comparable, V any] struct {
-	mutex    sync.RWMutex
-	store    map[K]V
-	selector func(V) K
+	mutex sync.RWMutex
+	store map[K]V
 }
 
 // NewStoreMapKeyValue creates a new map store for the given values.
@@ -17,8 +16,7 @@ type safeMapStore[K comparable, V any] struct {
 // This store is thread-safe.
 func NewStoreMapKeyValue[K comparable, V any](selector func(V) K, values ...V) *safeMapStore[K, V] {
 	store := &safeMapStore[K, V]{
-		store:    make(map[K]V, len(values)),
-		selector: selector,
+		store: make(map[K]V, len(values)),
 	}
 
 	for _, value := range values {
@@ -101,11 +99,8 @@ func (m *safeMapStore[K, V]) Clone() Store[K, V] {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	selector := m.selector
-
 	store := &safeMapStore[K, V]{
-		store:    make(map[K]V, m.Len()),
-		selector: selector,
+		store: make(map[K]V, m.Len()),
 	}
 
 	for key, value := range m.store {
@@ -113,10 +108,6 @@ func (m *safeMapStore[K, V]) Clone() Store[K, V] {
 	}
 
 	return store
-}
-
-func (m *safeMapStore[K, V]) Selector() func(V) K {
-	return m.selector
 }
 
 var _ Store[string, string] = &safeMapStore[string, string]{}

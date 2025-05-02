@@ -3,14 +3,12 @@ package kset
 import "iter"
 
 type unsafeMapStore[K comparable, V any] struct {
-	store    map[K]V
-	selector func(V) K
+	store map[K]V
 }
 
 func NewUnsafeMapStore[K comparable, V any](selector func(V) K, values ...V) *unsafeMapStore[K, V] {
 	store := &unsafeMapStore[K, V]{
-		store:    make(map[K]V, len(values)),
-		selector: selector,
+		store: make(map[K]V, len(values)),
 	}
 
 	for _, value := range values {
@@ -33,28 +31,6 @@ func NewUnsafeStoreMapKey[K comparable](values ...K) *unsafeMapStore[K, struct{}
 	}
 
 	return store
-}
-
-// NewKeyValueSet creates a new non-thread-safe set.
-// It requires a selector function that extracts a comparable key K from a value V.
-// Optionally, it can be initialized with one or more values.
-// The returned set is *not* safe for concurrent use by multiple goroutines.
-//
-// Example:
-//
-//	// Create an unsafe set of User structs, using ID as the key.
-//	userSet := store.NewKeyValueSet()
-func (m *unsafeMapStore[K, V]) NewKeyValueSet() KeyValueSet[K, V] {
-	return &keyValueSet[K, V]{
-		data:     m,
-		selector: m.selector,
-		newStore: func(len int) Store[K, V] {
-			return &unsafeMapStore[K, V]{
-				store:    make(map[K]V, len),
-				selector: m.selector,
-			}
-		},
-	}
 }
 
 func (m *unsafeMapStore[K, V]) Clear() {
@@ -96,22 +72,15 @@ func (m *unsafeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 }
 
 func (m *unsafeMapStore[K, V]) Clone() Store[K, V] {
-	selector := m.selector
-
 	store := &unsafeMapStore[K, V]{
-		store:    make(map[K]V, m.Len()),
-		selector: selector,
+		store: make(map[K]V, m.Len()),
 	}
 
-	for _, value := range m.store {
-		store.Upsert(selector(value), value)
+	for key, value := range m.store {
+		store.Upsert(key, value)
 	}
 
 	return store
-}
-
-func (m *unsafeMapStore[K, V]) Selector() func(V) K {
-	return m.selector
 }
 
 var _ Store[string, string] = &unsafeMapStore[string, string]{}

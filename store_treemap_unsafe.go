@@ -8,14 +8,12 @@ import (
 )
 
 type unsafeTreeMapStore[K constraints.Ordered, V any] struct {
-	store    *treemap.TreeMap[K, V]
-	selector func(V) K
+	store *treemap.TreeMap[K, V]
 }
 
 func NewUnsafeStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V) K, values ...V) *unsafeTreeMapStore[K, V] {
 	store := &unsafeTreeMapStore[K, V]{
-		store:    treemap.New[K, V](),
-		selector: selector,
+		store: treemap.New[K, V](),
 	}
 
 	for _, value := range values {
@@ -76,10 +74,6 @@ func (t *unsafeTreeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 
 func (t *unsafeTreeMapStore[K, V]) Len() int {
 	return t.store.Len()
-}
-
-func (t *unsafeTreeMapStore[K, V]) Selector() func(V) K {
-	return t.selector
 }
 
 func (t *unsafeTreeMapStore[K, V]) Upsert(key K, value V) {

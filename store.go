@@ -15,7 +15,6 @@ type (
 		Upsert(K, V)
 		Iter() iter.Seq2[K, V]
 		Clone() Store[K, V]
-		Selector() func(V) K
 	}
 
 	StoreType int

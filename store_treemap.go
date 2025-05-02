@@ -9,15 +9,13 @@ import (
 )
 
 type treeMapStore[K constraints.Ordered, V any] struct {
-	mutex    sync.RWMutex
-	store    *treemap.TreeMap[K, V]
-	selector func(V) K
+	mutex sync.RWMutex
+	store *treemap.TreeMap[K, V]
 }
 
 func NewStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V) K, values ...V) *treeMapStore[K, V] {
 	store := &treeMapStore[K, V]{
-		store:    treemap.New[K, V](),
-		selector: selector,
+		store: treemap.New[K, V](),
 	}
 
 	for _, value := range values {
@@ -95,10 +93,6 @@ func (t *treeMapStore[K, V]) Len() int {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 	return t.store.Len()
-}
-
-func (t *treeMapStore[K, V]) Selector() func(V) K {
-	return t.selector
 }
 
 func (t *treeMapStore[K, V]) Upsert(key K, value V) {

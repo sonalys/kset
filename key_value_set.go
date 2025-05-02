@@ -7,10 +7,11 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// KeyValueSet defines the interface for a generic set data structure.
-// K is the comparable type used for the underlying map keys.
-// V is the type of the elements stored in the set.
-type KeyValueSet[K comparable, V any] interface {
+// KeyValueSet is a key-value set.
+// It performs mathematical set operations on a batch of values.
+// It uses from a selector to extract keys from any given value.
+// The underlying data structure used for the set is selected on the initializer.
+type KeyValueSet[K constraints.Ordered, V any] interface {
 	Set[K]
 
 	// Append upserts multiple elements to the set.
@@ -123,14 +124,14 @@ type KeyValueSet[K comparable, V any] interface {
 	Selector(V) K
 }
 
-type keyValueSet[K comparable, V any] struct {
-	data     Store[K, V]
+type keyValueSet[K constraints.Ordered, V any, S Store[K, V]] struct {
+	data     S
 	selector func(V) K
-	newStore func(len int) Store[K, V]
+	newStore func(len int) S
 }
 
 // NewKeyValueSet creates a new key-value set implementation.
-// It requires a selector function that extracts a comparable key K from a value V.
+// It requires a selector function that extracts the key from the given values.
 // Optionally, it can be initialized with one or more values.
 //
 // Example:
@@ -138,38 +139,49 @@ type keyValueSet[K comparable, V any] struct {
 //	// Create an unsafe set of User structs, using ID as the key.
 //	userSet := kset.NewKeyValueUnsafe(func(u User) int { return u.ID }, user1, user2)
 func NewKeyValueSet[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeyValueSet[K, V] {
-	var m Store[K, V]
-
 	switch storeType {
 	case HashMap:
-		m = NewStoreMapKeyValue(selector, values...)
+		return &keyValueSet[K, V, *safeMapStore[K, V]]{
+			data:     NewStoreMapKeyValue(selector, values...),
+			selector: selector,
+			newStore: func(len int) *safeMapStore[K, V] {
+				return NewStoreMapKeyValue(selector)
+			},
+		}
 	case HashMapUnsafe:
-		m = NewUnsafeMapStore(selector, values...)
+		return &keyValueSet[K, V, *unsafeMapStore[K, V]]{
+			data:     NewUnsafeMapStore(selector, values...),
+			selector: selector,
+			newStore: func(len int) *unsafeMapStore[K, V] {
+				return NewUnsafeMapStore(selector)
+			},
+		}
 	case TreeMap:
-		m = NewStoreTreeMapKeyValue(selector, values...)
+		return &keyValueSet[K, V, *treeMapStore[K, V]]{
+			data:     NewStoreTreeMapKeyValue(selector, values...),
+			selector: selector,
+			newStore: func(len int) *treeMapStore[K, V] {
+				return NewStoreTreeMapKeyValue(selector)
+			},
+		}
 	case TreeMapUnsafe:
-		m = NewUnsafeStoreTreeMapKeyValue(selector, values...)
+		return &keyValueSet[K, V, *unsafeTreeMapStore[K, V]]{
+			data:     NewUnsafeStoreTreeMapKeyValue(selector, values...),
+			selector: selector,
+			newStore: func(len int) *unsafeTreeMapStore[K, V] {
+				return NewUnsafeStoreTreeMapKeyValue(selector)
+			},
+		}
 	default:
 		panic(fmt.Sprintf("type not supported: %s", storeType))
 	}
-
-	return &keyValueSet[K, V]{
-		data:     m,
-		selector: m.Selector(),
-		newStore: func(len int) Store[K, V] {
-			return &safeMapStore[K, V]{
-				store:    make(map[K]V, len),
-				selector: m.Selector(),
-			}
-		},
-	}
 }
 
-func (k *keyValueSet[K, V]) Selector(value V) K {
+func (k *keyValueSet[K, V, S]) Selector(value V) K {
 	return k.selector(value)
 }
 
-func (k *keyValueSet[K, V]) Append(values ...V) int {
+func (k *keyValueSet[K, V, S]) Append(values ...V) int {
 	prevLen := k.data.Len()
 	for _, val := range values {
 		key := k.selector(val)
@@ -178,22 +190,22 @@ func (k *keyValueSet[K, V]) Append(values ...V) int {
 	return k.data.Len() - prevLen
 }
 
-func (k *keyValueSet[K, V]) Len() int {
+func (k *keyValueSet[K, V, S]) Len() int {
 	return k.data.Len()
 }
 
-func (k *keyValueSet[K, V]) Clear() {
+func (k *keyValueSet[K, V, S]) Clear() {
 	k.data.Clear()
 }
 
-func (k *keyValueSet[K, V]) Clone() KeyValueSet[K, V] {
-	return &keyValueSet[K, V]{
-		data:     k.data.Clone(),
+func (k *keyValueSet[K, V, S]) Clone() KeyValueSet[K, V] {
+	return &keyValueSet[K, V, S]{
+		data:     k.data.Clone().(S),
 		selector: k.selector,
 	}
 }
 
-func (k *keyValueSet[K, V]) Contains(values ...V) bool {
+func (k *keyValueSet[K, V, S]) Contains(values ...V) bool {
 	for _, val := range values {
 		key := k.selector(val)
 		if !k.data.Contains(key) {
@@ -203,7 +215,7 @@ func (k *keyValueSet[K, V]) Contains(values ...V) bool {
 	return true
 }
 
-func (k *keyValueSet[K, V]) ContainsKeys(keys ...K) bool {
+func (k *keyValueSet[K, V, S]) ContainsKeys(keys ...K) bool {
 	for _, key := range keys {
 		if !k.data.Contains(key) {
 			return false
@@ -212,7 +224,7 @@ func (k *keyValueSet[K, V]) ContainsKeys(keys ...K) bool {
 	return true
 }
 
-func (k *keyValueSet[K, V]) ContainsAny(values ...V) bool {
+func (k *keyValueSet[K, V, S]) ContainsAny(values ...V) bool {
 	for _, val := range values {
 		key := k.selector(val)
 		if k.data.Contains(key) {
@@ -222,7 +234,7 @@ func (k *keyValueSet[K, V]) ContainsAny(values ...V) bool {
 	return false
 }
 
-func (k *keyValueSet[K, V]) ContainsAnyKey(keys ...K) bool {
+func (k *keyValueSet[K, V, S]) ContainsAnyKey(keys ...K) bool {
 	for _, key := range keys {
 		if k.data.Contains(key) {
 			return true
@@ -231,7 +243,7 @@ func (k *keyValueSet[K, V]) ContainsAnyKey(keys ...K) bool {
 	return false
 }
 
-func (k *keyValueSet[K, V]) Intersects(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) Intersects(other Set[K]) bool {
 	for key := range k.data.Iter() {
 		if other.ContainsKeys(key) {
 			return true
@@ -241,9 +253,9 @@ func (k *keyValueSet[K, V]) Intersects(other Set[K]) bool {
 	return false
 }
 
-func (k *keyValueSet[K, V]) Difference(other Set[K]) KeyValueSet[K, V] {
-	diff := &keyValueSet[K, V]{
-		data: k.data.Clone(),
+func (k *keyValueSet[K, V, S]) Difference(other Set[K]) KeyValueSet[K, V] {
+	diff := &keyValueSet[K, V, S]{
+		data: k.data.Clone().(S),
 	}
 
 	for key, value := range k.data.Iter() {
@@ -255,7 +267,7 @@ func (k *keyValueSet[K, V]) Difference(other Set[K]) KeyValueSet[K, V] {
 	return diff
 }
 
-func (k *keyValueSet[K, V]) Each(f func(V) bool) {
+func (k *keyValueSet[K, V, S]) Each(f func(V) bool) {
 	for _, elem := range k.data.Iter() {
 		if !f(elem) {
 			break
@@ -263,7 +275,7 @@ func (k *keyValueSet[K, V]) Each(f func(V) bool) {
 	}
 }
 
-func (k *keyValueSet[K, V]) Equal(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) Equal(other Set[K]) bool {
 	if k.Len() != other.Len() {
 		return false
 	}
@@ -277,8 +289,8 @@ func (k *keyValueSet[K, V]) Equal(other Set[K]) bool {
 	return true
 }
 
-func (k *keyValueSet[K, V]) Intersect(other Set[K]) KeyValueSet[K, V] {
-	intersection := &keyValueSet[K, V]{
+func (k *keyValueSet[K, V, S]) Intersect(other Set[K]) KeyValueSet[K, V] {
+	intersection := &keyValueSet[K, V, S]{
 		data:     k.newStore(k.data.Len()),
 		selector: k.selector,
 		newStore: k.newStore,
@@ -292,19 +304,19 @@ func (k *keyValueSet[K, V]) Intersect(other Set[K]) KeyValueSet[K, V] {
 	return intersection
 }
 
-func (k *keyValueSet[K, V]) IsEmpty() bool {
+func (k *keyValueSet[K, V, S]) IsEmpty() bool {
 	return k.Len() == 0
 }
 
-func (k *keyValueSet[K, V]) IsProperSubset(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) IsProperSubset(other Set[K]) bool {
 	return k.Len() < other.Len() && k.IsSubset(other)
 }
 
-func (k *keyValueSet[K, V]) IsProperSuperset(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) IsProperSuperset(other Set[K]) bool {
 	return k.Len() > other.Len() && k.IsSuperset(other)
 }
 
-func (k *keyValueSet[K, V]) IsSubset(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) IsSubset(other Set[K]) bool {
 	if k.Len() > other.Len() {
 		return false
 	}
@@ -318,11 +330,11 @@ func (k *keyValueSet[K, V]) IsSubset(other Set[K]) bool {
 	return true
 }
 
-func (k *keyValueSet[K, V]) IsSuperset(other Set[K]) bool {
+func (k *keyValueSet[K, V, S]) IsSuperset(other Set[K]) bool {
 	return other.IsSubset(k)
 }
 
-func (k *keyValueSet[K, V]) Iter() iter.Seq[V] {
+func (k *keyValueSet[K, V, S]) Iter() iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for _, elem := range k.data.Iter() {
 			if !yield(elem) {
@@ -332,7 +344,7 @@ func (k *keyValueSet[K, V]) Iter() iter.Seq[V] {
 	}
 }
 
-func (k *keyValueSet[K, V]) IterKeys() iter.Seq[K] {
+func (k *keyValueSet[K, V, S]) IterKeys() iter.Seq[K] {
 	return func(yield func(K) bool) {
 		for key := range k.data.Iter() {
 			if !yield(key) {
@@ -342,7 +354,7 @@ func (k *keyValueSet[K, V]) IterKeys() iter.Seq[K] {
 	}
 }
 
-func (k *keyValueSet[K, V]) Pop() (V, bool) {
+func (k *keyValueSet[K, V, S]) Pop() (V, bool) {
 	for key, value := range k.data.Iter() {
 		k.data.Delete(key)
 		return value, true
@@ -352,15 +364,15 @@ func (k *keyValueSet[K, V]) Pop() (V, bool) {
 	return zero, false
 }
 
-func (k *keyValueSet[K, V]) Remove(values ...V) {
+func (k *keyValueSet[K, V, S]) Remove(values ...V) {
 	for _, val := range values {
 		key := k.selector(val)
 		k.data.Delete(key)
 	}
 }
 
-func (k *keyValueSet[K, V]) SymmetricDifference(other KeyValueSet[K, V]) KeyValueSet[K, V] {
-	sd := &keyValueSet[K, V]{
+func (k *keyValueSet[K, V, S]) SymmetricDifference(other KeyValueSet[K, V]) KeyValueSet[K, V] {
+	sd := &keyValueSet[K, V, S]{
 		data:     k.newStore(k.data.Len()),
 		selector: k.selector,
 		newStore: k.newStore,
@@ -381,7 +393,7 @@ func (k *keyValueSet[K, V]) SymmetricDifference(other KeyValueSet[K, V]) KeyValu
 	return sd
 }
 
-func (k *keyValueSet[K, V]) ToSlice() []V {
+func (k *keyValueSet[K, V, S]) ToSlice() []V {
 	result := make([]V, 0, k.Len())
 	for _, elem := range k.data.Iter() {
 		result = append(result, elem)
@@ -389,7 +401,7 @@ func (k *keyValueSet[K, V]) ToSlice() []V {
 	return result
 }
 
-func (k *keyValueSet[K, V]) Union(other KeyValueSet[K, V]) KeyValueSet[K, V] {
+func (k *keyValueSet[K, V, S]) Union(other KeyValueSet[K, V]) KeyValueSet[K, V] {
 	union := k.Clone()
 
 	for elem := range other.Iter() {
@@ -399,4 +411,4 @@ func (k *keyValueSet[K, V]) Union(other KeyValueSet[K, V]) KeyValueSet[K, V] {
 	return union
 }
 
-var _ KeyValueSet[string, string] = &keyValueSet[string, string]{}
+var _ KeyValueSet[string, string] = &keyValueSet[string, string, *safeMapStore[string, string]]{}
