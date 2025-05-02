@@ -107,14 +107,12 @@ type keySet[K constraints.Ordered, S store[K, struct{}]] struct {
 }
 
 // NewKeySet creates a key-only set from any given slice.
-// It requires a selector function that extracts a constraints.Ordered key K from a value V.
 // Optionally, it can be initialized with one or more values.
-// The returned set is not safe for concurrent use by multiple goroutines.
 //
 // Example:
 //
 //	// Create a set of User structs, using ID as the key.
-//	set := kset.NewKeySet(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
+//	set := kset.NewKeySet(kset.HashMap, "id1", "id2")
 func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeySet[K] {
 	switch storeType {
 	case HashMap:
@@ -148,6 +146,21 @@ func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeySet[K
 	default:
 		panic(fmt.Sprintf("type not supported: %s", storeType))
 	}
+}
+
+// NewKeySetSelect creates a key-only set from any given slice.
+// It requires a selector function to extract the keys from the values.
+//
+// Example:
+//
+//	// Create a set of User structs, using ID as the key.
+//	set := kset.NewKeySetSelect(kset.HashMap, func(u User) int { return u.id }, user1, user2)
+func NewKeySetSelect[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeySet[K] {
+	keys := make([]K, 0, len(values))
+	for i := range values {
+		keys = append(keys, selector(values[i]))
+	}
+	return NewKeySet(storeType, keys...)
 }
 
 // Append adds keys to the set. Returns the number of new keys added.
