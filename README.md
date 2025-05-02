@@ -16,6 +16,7 @@ You can use sets of different data types as long as their keys are from the same
 *   **Key-Based:** Uniqueness is determined by a user-provided selector function.
 *   **Comprehensive API:** Implements standard set operations like Union, Intersection, Difference, Symmetric Difference, Subset/Superset checks, etc.
 *   **Iterable:** Provides an `iter.Seq[V]` method compatible with Go 1.22+.
+*   **Selectable Underlying Data Structure** Allows you to choose either a hash-table or a tree-map structure for the sets.
 
 ## Installation
 
@@ -32,12 +33,13 @@ You can use kset with your own structs by providing an appropriate KeyFunc.
 package main
 
 import (
-    "fmt"
+	"fmt"
+	"slices"
 
-    "github.com/sonalys/kset"
+	"github.com/sonalys/kset"
 )
 
-func ExampleNewKeyValue() {
+func ExampleNewStoreMapKeyValue() {
 	type User struct {
 		ID   int
 		Name string
@@ -45,7 +47,7 @@ func ExampleNewKeyValue() {
 
 	userIDSelector := func(u User) int { return u.ID }
 
-	userSet := kset.NewKeyValue(userIDSelector,
+	userSet := kset.NewKeyValueSet(kset.TreeMap, userIDSelector,
 		User{ID: 1, Name: "Alice"},
 		User{ID: 2, Name: "Bob"},
 	)
@@ -70,8 +72,8 @@ func ExampleNewKeyValue() {
 Here's a basic example using a set of integers:
 
 ```go
-func ExampleNew() {
-	setA := kset.New(1, 2, 3, 1)
+func ExampleNewStoreMapKey() {
+	setA := kset.NewKeySet(kset.TreeMap, 1, 2, 3, 1)
 
 	sortSlice := func(slice []int) []int {
 		slices.Sort(slice)
@@ -83,7 +85,7 @@ func ExampleNew() {
 	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
 	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
 
-	setB := kset.New(3, 4, 5)
+	setB := kset.NewKeySet(kset.TreeMap, 3, 4, 5)
 	setB.Append(3, 4, 5)
 
 	// Set operations

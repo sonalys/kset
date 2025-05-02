@@ -1,11 +1,16 @@
 package kset
 
-import "iter"
+import (
+	"fmt"
+	"iter"
+
+	"golang.org/x/exp/constraints"
+)
 
 // KeyOnlySet defines a key-only set.
 // K is the comparable type used for the underlying map keys.
 type KeyOnlySet[K comparable] interface {
-	KeySet[K]
+	Set[K]
 
 	// Append upserts multiple elements to the set.
 	// It returns the number of elements that were actually added (i.e., were not already present).
@@ -27,14 +32,14 @@ type KeyOnlySet[K comparable] interface {
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  diff := s1.Difference(s2) // diff is {1, 2}
-	Difference(other KeySet[K]) KeyOnlySet[K]
+	Difference(other Set[K]) KeyOnlySet[K]
 
 	// Intersect returns a new set containing elements that are common to both the current set and the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  intersection := s1.Intersect(s2) // intersection is {3}
-	Intersect(other KeySet[K]) KeyOnlySet[K]
+	Intersect(other Set[K]) KeyOnlySet[K]
 
 	// Each executes the given function fn for each element in the set.
 	// Iteration stops if fn returns false.
@@ -93,9 +98,9 @@ type KeyOnlySet[K comparable] interface {
 	ToSlice() []K
 }
 
-// KeySet defines the interface of the behavior expected from only comparing keys, and not values.
+// Set defines the interface of the behavior expected from only comparing keys, and not values.
 // This interface is useful for comparing sets that shares the same key type, but not the same value.
-type KeySet[K comparable] interface {
+type Set[K comparable] interface {
 	// Len returns the number of elements in the set.
 	// Example:
 	//  s := NewPrimitive(1, 2)
@@ -141,7 +146,7 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(1, 2)
 	//  isProper := s1.IsProperSubset(s2) // isProper is true
 	//  isProper = s1.IsProperSubset(s3) // isProper is false
-	IsProperSubset(other KeySet[K]) bool
+	IsProperSubset(other Set[K]) bool
 
 	// IsProperSuperset checks if the set is a proper superset of another set.
 	// A proper superset is a superset that is not equal to the other set.
@@ -151,7 +156,7 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(1, 2, 3)
 	//  isProper := s1.IsProperSuperset(s2) // isProper is true
 	//  isProper = s1.IsProperSuperset(s3) // isProper is false
-	IsProperSuperset(other KeySet[K]) bool
+	IsProperSuperset(other Set[K]) bool
 
 	// IsSubset checks if the set is a subset of another set (i.e., all elements of the current set are also in the other set).
 	// Example:
@@ -160,7 +165,7 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(1, 3)
 	//  isSub := s1.IsSubset(s2) // isSub is true
 	//  isSub = s1.IsSubset(s3) // isSub is false
-	IsSubset(other KeySet[K]) bool
+	IsSubset(other Set[K]) bool
 
 	// IsSuperset checks if the set is a superset of another set (i.e., all elements of the other set are also in the current set).
 	// Example:
@@ -169,7 +174,7 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(1, 4)
 	//  isSuper := s1.IsSuperset(s2) // isSuper is true
 	//  isSuper = s1.IsSuperset(s3) // isSuper is false
-	IsSuperset(other KeySet[K]) bool
+	IsSuperset(other Set[K]) bool
 
 	// Intersects checks if the set has at least one element in common with another set.
 	// Example:
@@ -178,7 +183,7 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(4, 5)
 	//  intersects := s1.Intersects(s2) // intersects is true
 	//  intersects = s1.Intersects(s3) // intersects is false
-	Intersects(other KeySet[K]) bool
+	Intersects(other Set[K]) bool
 
 	// Equal checks if the set is equal to another set (i.e., contains the same elements).
 	// Example:
@@ -187,7 +192,273 @@ type KeySet[K comparable] interface {
 	//  s3 := NewPrimitive(1, 3)
 	//  isEqual := s1.Equal(s2) // isEqual is true
 	//  isEqual = s1.Equal(s3) // isEqual is false
-	Equal(other KeySet[K]) bool
+	Equal(other Set[K]) bool
 
 	IterKeys() iter.Seq[K]
 }
+
+// keySet is an implementation of KeySet.
+type keySet[K comparable] struct {
+	store    Store[K, struct{}]
+	newStore func(len int) Store[K, struct{}]
+}
+
+// NewNewFromUnsaferom creates a new non-thread-safe key-only set from any given slice.
+// It requires a selector function that extracts a comparable key K from a value V.
+// Optionally, it can be initialized with one or more values.
+// The returned set is not safe for concurrent use by multiple goroutines.
+//
+// Example:
+//
+//	// Create a set of User structs, using ID as the key.
+//	set := kset.NewFromUnsafe(func(u User) int { return u.ID }, user1, user2)
+func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeyOnlySet[K] {
+	var m Store[K, struct{}]
+
+	switch storeType {
+	case HashMap:
+		m = NewStoreMapKey(values...)
+	case HashMapUnsafe:
+		m = NewUnsafeStoreMapKey(values...)
+	case TreeMap:
+		m = NewStoreTreeMapKey(values...)
+	case TreeMapUnsafe:
+		m = NewUnsafeStoreTreeMapKey(values...)
+	default:
+		panic(fmt.Sprintf("type not supported: %s", storeType))
+	}
+
+	return &keySet[K]{
+		store: m,
+		newStore: func(len int) Store[K, struct{}] {
+			return &safeMapStore[K, struct{}]{
+				store: make(map[K]struct{}, len),
+			}
+		},
+	}
+}
+
+// Append adds keys to the set. Returns the number of new keys added.
+func (k keySet[K]) Append(keys ...K) int {
+	prevLen := k.store.Len()
+	for _, key := range keys {
+		k.store.Upsert(key, struct{}{})
+	}
+	return k.store.Len() - prevLen
+}
+
+// Len returns the number of keys in the set.
+func (k keySet[K]) Len() int {
+	return k.store.Len()
+}
+
+// Clear removes all keys from the set.
+func (k keySet[K]) Clear() {
+	k.store.Clear()
+}
+
+// Clone creates a copy of the set.
+func (k keySet[K]) Clone() KeyOnlySet[K] {
+	return keySet[K]{
+		store: k.store.Clone(),
+	}
+}
+
+// ContainsKeys checks if all specified keys are present in the set.
+func (k keySet[K]) ContainsKeys(keys ...K) bool {
+	for _, key := range keys {
+		if _, ok := k.store.Get(key); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// ContainsAnyKey checks if any of the specified keys are present in the set.
+func (k keySet[K]) ContainsAnyKey(keys ...K) bool {
+	for _, key := range keys {
+		if _, ok := k.store.Get(key); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// Intersects checks if this set shares any keys with the other set.
+func (k keySet[K]) Intersects(other Set[K]) bool {
+	for key := range k.store.Iter() {
+		if other.ContainsKeys(key) {
+			return true
+		}
+	}
+	return false
+}
+
+// Difference returns a new set with keys in this set but not in the other.
+func (k keySet[K]) Difference(other Set[K]) KeyOnlySet[K] {
+	diff := &keySet[K]{
+		store:    k.newStore(k.Len()),
+		newStore: k.newStore,
+	}
+	for key := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			diff.Append(key)
+		}
+	}
+	return diff
+}
+
+// Each executes a function for each key in the set until the function returns false.
+func (k keySet[K]) Each(f func(K) bool) {
+	for key := range k.store.Iter() {
+		if !f(key) {
+			break
+		}
+	}
+}
+
+// Equal checks if this set is equal to another set (contains the same keys).
+func (k keySet[K]) Equal(other Set[K]) bool {
+	if k.Len() != other.Len() {
+		return false
+	}
+	for key := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			return false
+		}
+	}
+	return true
+}
+
+// Intersect returns a new set with keys common to both this set and the other.
+func (k keySet[K]) Intersect(other Set[K]) KeyOnlySet[K] {
+	intersection := &keySet[K]{
+		store:    k.newStore(k.Len()),
+		newStore: k.newStore,
+	}
+
+	for key := range k.store.Iter() {
+		if other.ContainsKeys(key) {
+			intersection.Append(key)
+		}
+	}
+
+	return intersection
+}
+
+// IsEmpty checks if the set is empty.
+func (k keySet[K]) IsEmpty() bool {
+	return k.Len() == 0
+}
+
+// IsProperSubset checks if this set is a proper subset of the other set.
+func (k keySet[K]) IsProperSubset(other Set[K]) bool {
+	return k.Len() < other.Len() && k.IsSubset(other)
+}
+
+// IsProperSuperset checks if this set is a proper superset of the other set.
+func (k keySet[K]) IsProperSuperset(other Set[K]) bool {
+	return k.Len() > other.Len() && k.IsSuperset(other)
+}
+
+// IsSubset checks if this set is a subset of the other set.
+func (k keySet[K]) IsSubset(other Set[K]) bool {
+	if k.Len() > other.Len() {
+		return false
+	}
+	for key := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			return false
+		}
+	}
+	return true
+}
+
+// IsSuperset checks if this set is a superset of the other set.
+func (k keySet[K]) IsSuperset(other Set[K]) bool {
+	if k.Len() > other.Len() {
+		return false
+	}
+
+	for key := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Iter returns an iterator for the keys in the set.
+func (k keySet[K]) Iter() iter.Seq[K] {
+	return func(yield func(K) bool) {
+		for key := range k.store.Iter() {
+			if !yield(key) {
+				break
+			}
+		}
+	}
+}
+
+// Iter returns an iterator for the keys in the set.
+func (k keySet[K]) IterKeys() iter.Seq[K] {
+	return k.Iter()
+}
+
+// Pop removes and returns an arbitrary key from the set.
+// The second return value indicates if a key was removed (true) or if the set was empty (false).
+func (k keySet[K]) Pop() (K, bool) {
+	for key := range k.store.Iter() {
+		k.store.Delete(key)
+		return key, true
+	}
+	var zero K
+	return zero, false
+}
+
+// Remove removes the specified keys from the set.
+func (k keySet[K]) Remove(keys ...K) {
+	for _, key := range keys {
+		k.store.Delete(key)
+	}
+}
+
+// SymmetricDifference returns a new set with keys in either this set or the other, but not both.
+func (k keySet[K]) SymmetricDifference(other KeyOnlySet[K]) KeyOnlySet[K] {
+	sd := &keySet[K]{
+		store:    k.newStore(k.Len()),
+		newStore: k.newStore,
+	}
+	for key := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			sd.Append(key)
+		}
+	}
+	for key := range other.Iter() {
+		if !k.ContainsKeys(key) {
+			sd.Append(key)
+		}
+	}
+	return sd
+}
+
+// ToSlice returns a slice containing all the keys in the set. The order is not guaranteed.
+func (k keySet[K]) ToSlice() []K {
+	result := make([]K, 0, k.Len())
+	for key := range k.store.Iter() {
+		result = append(result, key)
+	}
+	return result
+}
+
+// Union returns a new set with all keys from both this set and the other.
+func (k keySet[K]) Union(other KeyOnlySet[K]) KeyOnlySet[K] {
+	union := k.Clone()
+	for key := range other.Iter() {
+		union.Append(key)
+	}
+	return union
+}
+
+// Ensure unsafeKeySet implements KeySet at compile time.
+var _ KeyOnlySet[string] = keySet[string]{}
