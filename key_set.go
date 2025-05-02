@@ -7,9 +7,9 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// KeyOnlySet defines a key-only set.
+// KeySet defines a key-only set.
 // K is the constraints.Ordered type used for the underlying map keys.
-type KeyOnlySet[K constraints.Ordered] interface {
+type KeySet[K constraints.Ordered] interface {
 	Set[K]
 
 	// Append upserts multiple elements to the set.
@@ -25,21 +25,21 @@ type KeyOnlySet[K constraints.Ordered] interface {
 	//  s2 := s1.Clone() // s2 is {1, 2}, independent of s1
 	//  s2.Add(3)
 	//  // s1 is {1, 2}, s2 is {1, 2, 3}
-	Clone() KeyOnlySet[K]
+	Clone() KeySet[K]
 
 	// Difference returns a new set containing elements that are in the current set but not in the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  diff := s1.Difference(s2) // diff is {1, 2}
-	Difference(other Set[K]) KeyOnlySet[K]
+	Difference(other Set[K]) KeySet[K]
 
 	// Intersect returns a new set containing elements that are common to both the current set and the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  intersection := s1.Intersect(s2) // intersection is {3}
-	Intersect(other Set[K]) KeyOnlySet[K]
+	Intersect(other Set[K]) KeySet[K]
 
 	// Each executes the given function fn for each element in the set.
 	// Iteration stops if fn returns false.
@@ -72,14 +72,14 @@ type KeyOnlySet[K constraints.Ordered] interface {
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  symDiff := s1.SymmetricDifference(s2) // symDiff is {1, 2, 4, 5}
-	SymmetricDifference(other KeyOnlySet[K]) KeyOnlySet[K]
+	SymmetricDifference(other KeySet[K]) KeySet[K]
 
 	// Union returns a new set containing all elements from both the current set and the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2)
 	//  s2 := NewPrimitive(2, 3)
 	//  union := s1.Union(s2) // union is {1, 2, 3}
-	Union(other KeyOnlySet[K]) KeyOnlySet[K]
+	Union(other KeySet[K]) KeySet[K]
 
 	// Pop removes and returns an arbitrary element from the set.
 	// It returns the removed element and true if the set was not empty, otherwise it returns the zero value of V and false.
@@ -106,7 +106,7 @@ type keySet[K constraints.Ordered, S store[K, struct{}]] struct {
 	newStore func(len int) S
 }
 
-// NewKey creates a key-only set from any given slice.
+// NewKeySet creates a key-only set from any given slice.
 // It requires a selector function that extracts a constraints.Ordered key K from a value V.
 // Optionally, it can be initialized with one or more values.
 // The returned set is not safe for concurrent use by multiple goroutines.
@@ -114,8 +114,8 @@ type keySet[K constraints.Ordered, S store[K, struct{}]] struct {
 // Example:
 //
 //	// Create a set of User structs, using ID as the key.
-//	set := kset.NewKey(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
-func NewKey[K constraints.Ordered](storeType StoreType, values ...K) KeyOnlySet[K] {
+//	set := kset.NewKeySet(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
+func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeySet[K] {
 	switch storeType {
 	case HashMap:
 		return &keySet[K, *safeMapStore[K, struct{}]]{
@@ -170,7 +170,7 @@ func (k keySet[K, S]) Clear() {
 }
 
 // Clone creates a copy of the set.
-func (k keySet[K, S]) Clone() KeyOnlySet[K] {
+func (k keySet[K, S]) Clone() KeySet[K] {
 	return keySet[K, S]{
 		store: k.store.Clone().(S),
 	}
@@ -207,7 +207,7 @@ func (k keySet[K, S]) Intersects(other Set[K]) bool {
 }
 
 // Difference returns a new set with keys in this set but not in the other.
-func (k keySet[K, S]) Difference(other Set[K]) KeyOnlySet[K] {
+func (k keySet[K, S]) Difference(other Set[K]) KeySet[K] {
 	diff := &keySet[K, S]{
 		store:    k.newStore(k.Len()),
 		newStore: k.newStore,
@@ -243,7 +243,7 @@ func (k keySet[K, S]) Equal(other Set[K]) bool {
 }
 
 // Intersect returns a new set with keys common to both this set and the other.
-func (k keySet[K, S]) Intersect(other Set[K]) KeyOnlySet[K] {
+func (k keySet[K, S]) Intersect(other Set[K]) KeySet[K] {
 	intersection := &keySet[K, S]{
 		store:    k.newStore(k.Len()),
 		newStore: k.newStore,
@@ -326,7 +326,7 @@ func (k keySet[K, S]) Remove(keys ...K) {
 }
 
 // SymmetricDifference returns a new set with keys in either this set or the other, but not both.
-func (k keySet[K, S]) SymmetricDifference(other KeyOnlySet[K]) KeyOnlySet[K] {
+func (k keySet[K, S]) SymmetricDifference(other KeySet[K]) KeySet[K] {
 	sd := &keySet[K, S]{
 		store:    k.newStore(k.Len()),
 		newStore: k.newStore,
@@ -354,7 +354,7 @@ func (k keySet[K, S]) ToSlice() []K {
 }
 
 // Union returns a new set with all keys from both this set and the other.
-func (k keySet[K, S]) Union(other KeyOnlySet[K]) KeyOnlySet[K] {
+func (k keySet[K, S]) Union(other KeySet[K]) KeySet[K] {
 	union := k.Clone()
 	for key := range other.Iter() {
 		union.Append(key)
@@ -363,4 +363,4 @@ func (k keySet[K, S]) Union(other KeyOnlySet[K]) KeyOnlySet[K] {
 }
 
 // Ensure unsafeKeySet implements KeySet at compile time.
-var _ KeyOnlySet[string] = keySet[string, *treeMapStore[string, struct{}]]{}
+var _ KeySet[string] = keySet[string, *treeMapStore[string, struct{}]]{}

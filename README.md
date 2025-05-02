@@ -3,7 +3,8 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/sonalys/kset.svg)](https://pkg.go.dev/github.com/sonalys/kset)
 [![Tests](https://github.com/sonalys/kset/actions/workflows/test.yml/badge.svg)](https://github.com/sonalys/kset/actions/workflows/test.yml)
 
-`kset` provides a flexible and type-safe implementation of a mathematical set data structure in Go, leveraging generics introduced in Go 1.18.
+`kset` provides a flexible and type-safe implementation of a mathematical set data structure in Go.  
+It requires Go 1.23+ as it uses iterators and generics.
 
 It allows you to work with sets of keys or key-values.  
 It easily converts from slices  
@@ -27,7 +28,7 @@ go get github.com/sonalys/kset
 ## Usage
 
 Using Custom Types
-You can use kset with your own structs by providing an appropriate KeyFunc.
+You can use kset with your own structs by providing an appropriate selector.
 
 ```go
 package main
@@ -39,7 +40,7 @@ import (
 	"github.com/sonalys/kset"
 )
 
-func ExampleNewKeyValue() {
+func ExampleNewKeyValueSet() {
 	type User struct {
 		ID   int
 		Name string
@@ -47,7 +48,7 @@ func ExampleNewKeyValue() {
 
 	userIDSelector := func(u User) int { return u.ID }
 
-	userSet := kset.NewKeyValue(kset.TreeMap, userIDSelector,
+	userSet := kset.NewKeyValueSet(kset.TreeMap, userIDSelector,
 		User{ID: 1, Name: "Alice"},
 		User{ID: 2, Name: "Bob"},
 	)
@@ -72,8 +73,8 @@ func ExampleNewKeyValue() {
 Here's a basic example using a set of integers:
 
 ```go
-func ExampleNewKey() {
-	setA := kset.NewKey(kset.TreeMap, 1, 2, 3, 1)
+func ExampleNewKeySet() {
+	setA := kset.NewKeySet(kset.TreeMap, 1, 2, 3, 1)
 
 	sortSlice := func(slice []int) []int {
 		slices.Sort(slice)
@@ -85,7 +86,7 @@ func ExampleNewKey() {
 	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
 	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
 
-	setB := kset.NewKey(kset.TreeMap, 3, 4, 5)
+	setB := kset.NewKeySet(kset.TreeMap, 3, 4, 5)
 	setB.Append(3, 4, 5)
 
 	// Set operations

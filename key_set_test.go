@@ -8,7 +8,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-func forEachStoreK[K constraints.Ordered](t *testing.T, f func(t *testing.T, constructor func(keys ...K) kset.KeyOnlySet[K])) {
+func forEachStoreK[K constraints.Ordered](t *testing.T, f func(t *testing.T, constructor func(keys ...K) kset.KeySet[K])) {
 	stores := []kset.StoreType{
 		kset.HashMap,
 		kset.HashMapUnsafe,
@@ -18,15 +18,15 @@ func forEachStoreK[K constraints.Ordered](t *testing.T, f func(t *testing.T, con
 
 	for _, storeType := range stores {
 		t.Run(storeType.String(), func(t *testing.T) {
-			f(t, func(values ...K) kset.KeyOnlySet[K] {
-				return kset.NewKey(storeType, values...)
+			f(t, func(values ...K) kset.KeySet[K] {
+				return kset.NewKeySet(storeType, values...)
 			})
 		})
 	}
 }
 
 func Test_KeySet_Append(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("new value", func(t *testing.T) {
 			set := constructor(1, 2)
 			count := set.Append(3)
@@ -44,7 +44,7 @@ func Test_KeySet_Append(t *testing.T) {
 }
 
 func Test_KeySet_Clear(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		set := constructor(1, 2)
 		set.Clear()
 		assert.Equal(t, 0, set.Len())
@@ -52,7 +52,7 @@ func Test_KeySet_Clear(t *testing.T) {
 }
 
 func Test_KeySet_Clone(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		set := constructor(1, 2)
 		clone := set.Clone()
 
@@ -65,7 +65,7 @@ func Test_KeySet_Clone(t *testing.T) {
 }
 
 func Test_KeySet_ContainsKeys(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("contains", func(t *testing.T) {
 			set := constructor(1, 2)
 			assert.True(t, set.ContainsKeys(1))
@@ -79,7 +79,7 @@ func Test_KeySet_ContainsKeys(t *testing.T) {
 }
 
 func Test_KeySet_ContainsAnyKey(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("contains", func(t *testing.T) {
 			set := constructor(1, 2)
 			assert.True(t, set.ContainsAnyKey(3, 1))
@@ -93,7 +93,7 @@ func Test_KeySet_ContainsAnyKey(t *testing.T) {
 }
 
 func Test_KeySet_Intersects(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
@@ -111,7 +111,7 @@ func Test_KeySet_Intersects(t *testing.T) {
 }
 
 func Test_KeySet_Difference(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
@@ -129,7 +129,7 @@ func Test_KeySet_Difference(t *testing.T) {
 }
 
 func Test_KeySet_Each(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("all elements", func(t *testing.T) {
 			set := constructor(1, 2)
 
@@ -157,7 +157,7 @@ func Test_KeySet_Each(t *testing.T) {
 }
 
 func Test_KeySet_Equal(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("equal", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 1)
@@ -175,7 +175,7 @@ func Test_KeySet_Equal(t *testing.T) {
 }
 
 func Test_KeySet_Intersect(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
@@ -193,7 +193,7 @@ func Test_KeySet_Intersect(t *testing.T) {
 }
 
 func Test_KeySet_IsEmpty(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
 			set := constructor()
 
@@ -209,7 +209,7 @@ func Test_KeySet_IsEmpty(t *testing.T) {
 }
 
 func Test_KeySet_Subset(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		set1 := constructor(1, 2, 3, 4)
 		subset1 := constructor(1, 4)
 
@@ -232,7 +232,7 @@ func Test_KeySet_Subset(t *testing.T) {
 }
 
 func Test_KeySet_Iter(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		set := constructor(1, 2)
 		t.Run("all values", func(t *testing.T) {
 			sum := 0
@@ -254,7 +254,7 @@ func Test_KeySet_Iter(t *testing.T) {
 }
 
 func Test_KeySet_Len(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
 			set := constructor()
 
@@ -270,7 +270,7 @@ func Test_KeySet_Len(t *testing.T) {
 }
 
 func Test_KeySet_Pop(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
 			set := constructor()
 
@@ -290,7 +290,7 @@ func Test_KeySet_Pop(t *testing.T) {
 }
 
 func Test_KeySet_Remove(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
 			set := constructor()
 			set.Remove(1)
@@ -311,7 +311,7 @@ func Test_KeySet_Remove(t *testing.T) {
 }
 
 func Test_KeySet_SymmetricDifference(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
@@ -329,7 +329,7 @@ func Test_KeySet_SymmetricDifference(t *testing.T) {
 }
 
 func Test_KeySet_ToSlice(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("not empty", func(t *testing.T) {
 			set := constructor(1)
 			assert.Equal(t, []int{1}, set.ToSlice())
@@ -338,7 +338,7 @@ func Test_KeySet_ToSlice(t *testing.T) {
 }
 
 func Test_KeySet_Union(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeyOnlySet[int]) {
+	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)

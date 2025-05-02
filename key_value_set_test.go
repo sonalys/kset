@@ -23,7 +23,7 @@ func forEachStore[K constraints.Ordered, V any](t *testing.T, f func(t *testing.
 	for _, storeType := range stores {
 		t.Run(storeType.String(), func(t *testing.T) {
 			f(t, func(selector func(V) K, values ...V) kset.KeyValueSet[K, V] {
-				return kset.NewKeyValue(storeType, selector, values...)
+				return kset.NewKeyValueSet(storeType, selector, values...)
 			})
 		})
 	}

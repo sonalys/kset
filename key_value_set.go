@@ -114,14 +114,6 @@ type KeyValueSet[K constraints.Ordered, V any] interface {
 	//  s := NewPrimitive(3, 1, 2)
 	//  slice := s.ToSlice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
 	ToSlice() []V
-
-	// Selector returns the function used to derive the key K from an element V.
-	// This function is typically provided when the set is created.
-	// Example:
-	//  keyFn := func(i int) int { return i+1 }
-	//  s := New(keyFn)
-	//  key := s.Selector(5) // key is 6
-	Selector(V) K
 }
 
 type keyValueSet[K constraints.Ordered, V any, S store[K, V]] struct {
@@ -130,15 +122,19 @@ type keyValueSet[K constraints.Ordered, V any, S store[K, V]] struct {
 	newStore func(len int) S
 }
 
-// NewKeyValue creates a new key-value set implementation.
+// NewKeyValueSet creates a new key-value set implementation.
 // It requires a selector function that extracts the key from the given values.
 // Optionally, it can be initialized with one or more values.
 //
 // Example:
 //
 //	// Create an unsafe set of User structs, using ID as the key.
-//	userSet := kset.NewKeyValue(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
-func NewKeyValue[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeyValueSet[K, V] {
+//	userSet := kset.NewKeyValueSet(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
+func NewKeyValueSet[K constraints.Ordered, V any](
+	storeType StoreType,
+	selector func(V) K,
+	values ...V,
+) KeyValueSet[K, V] {
 	switch storeType {
 	case HashMap:
 		return &keyValueSet[K, V, *safeMapStore[K, V]]{
@@ -175,10 +171,6 @@ func NewKeyValue[K constraints.Ordered, V any](storeType StoreType, selector fun
 	default:
 		panic(fmt.Sprintf("type not supported: %s", storeType))
 	}
-}
-
-func (k *keyValueSet[K, V, S]) Selector(value V) K {
-	return k.selector(value)
 }
 
 func (k *keyValueSet[K, V, S]) Append(values ...V) int {

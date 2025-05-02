@@ -1,6 +1,6 @@
 module github.com/sonalys/kset
 
-go 1.24
+go 1.23
 
 require (
 	github.com/igrmk/treemap/v2 v2.0.1
