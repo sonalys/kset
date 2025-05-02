@@ -91,7 +91,8 @@ func ExampleNewStoreMapKey() {
 	// Set operations
 	union := setA.Union(setB)
 	intersection := setA.Intersect(setB)
-	difference := setA.Difference(setB) // Elements in intSet but not in otherSet
+	// Elements in intSet but not in otherSet
+	difference := setA.Difference(setB)
 	symDifference := setA.SymmetricDifference(setB)
 
 	fmt.Printf("Other Set: %v\n", sortSlice(setB.ToSlice()))
