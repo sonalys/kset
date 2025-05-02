@@ -101,12 +101,12 @@ type KeyOnlySet[K constraints.Ordered] interface {
 // keySet is an implementation of KeySet.
 // K is the key, must be ordered.
 // S is just a generic type parameter for removing the store abstraction and accessing the implementation directly.
-type keySet[K constraints.Ordered, S Store[K, struct{}]] struct {
+type keySet[K constraints.Ordered, S store[K, struct{}]] struct {
 	store    S
 	newStore func(len int) S
 }
 
-// NewNewFromUnsaferom creates a new non-thread-safe key-only set from any given slice.
+// NewKey creates a key-only set from any given slice.
 // It requires a selector function that extracts a constraints.Ordered key K from a value V.
 // Optionally, it can be initialized with one or more values.
 // The returned set is not safe for concurrent use by multiple goroutines.
@@ -114,35 +114,35 @@ type keySet[K constraints.Ordered, S Store[K, struct{}]] struct {
 // Example:
 //
 //	// Create a set of User structs, using ID as the key.
-//	set := kset.NewFromUnsafe(func(u User) int { return u.ID }, user1, user2)
-func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeyOnlySet[K] {
+//	set := kset.NewKey(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
+func NewKey[K constraints.Ordered](storeType StoreType, values ...K) KeyOnlySet[K] {
 	switch storeType {
 	case HashMap:
 		return &keySet[K, *safeMapStore[K, struct{}]]{
-			store: NewStoreMapKey(values...),
+			store: newStoreMapK(values...),
 			newStore: func(len int) *safeMapStore[K, struct{}] {
-				return NewStoreMapKey[K]()
+				return newStoreMapK[K]()
 			},
 		}
 	case HashMapUnsafe:
 		return &keySet[K, *unsafeMapStore[K, struct{}]]{
-			store: NewUnsafeStoreMapKey(values...),
+			store: newStoreUnsafeMapK(values...),
 			newStore: func(len int) *unsafeMapStore[K, struct{}] {
-				return NewUnsafeStoreMapKey[K]()
+				return newStoreUnsafeMapK[K]()
 			},
 		}
 	case TreeMap:
 		return &keySet[K, *treeMapStore[K, struct{}]]{
-			store: NewStoreTreeMapKey(values...),
+			store: newStoreTreeMapK(values...),
 			newStore: func(len int) *treeMapStore[K, struct{}] {
-				return NewStoreTreeMapKey[K]()
+				return newStoreTreeMapK[K]()
 			},
 		}
 	case TreeMapUnsafe:
 		return &keySet[K, *unsafeTreeMapStore[K, struct{}]]{
-			store: NewUnsafeStoreTreeMapKey(values...),
+			store: newStoreUnsafeTreeMapK(values...),
 			newStore: func(len int) *unsafeTreeMapStore[K, struct{}] {
-				return NewUnsafeStoreTreeMapKey[K]()
+				return newStoreUnsafeTreeMapK[K]()
 			},
 		}
 	default:

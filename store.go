@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	Store[K comparable, V any] interface {
+	store[K comparable, V any] interface {
 		Len() int
 		Clear()
 		Delete(K)
@@ -14,7 +14,7 @@ type (
 		Get(K) (V, bool)
 		Upsert(K, V)
 		Iter() iter.Seq2[K, V]
-		Clone() Store[K, V]
+		Clone() store[K, V]
 	}
 
 	StoreType int

@@ -11,7 +11,7 @@ type unsafeTreeMapStore[K constraints.Ordered, V any] struct {
 	store *treemap.TreeMap[K, V]
 }
 
-func NewUnsafeStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V) K, values ...V) *unsafeTreeMapStore[K, V] {
+func newStoreUnsafeTreeMapKV[K constraints.Ordered, V any](selector func(V) K, values ...V) *unsafeTreeMapStore[K, V] {
 	store := &unsafeTreeMapStore[K, V]{
 		store: treemap.New[K, V](),
 	}
@@ -23,7 +23,7 @@ func NewUnsafeStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V
 	return store
 }
 
-func NewUnsafeStoreTreeMapKey[K constraints.Ordered](values ...K) *unsafeTreeMapStore[K, struct{}] {
+func newStoreUnsafeTreeMapK[K constraints.Ordered](values ...K) *unsafeTreeMapStore[K, struct{}] {
 	store := &unsafeTreeMapStore[K, struct{}]{
 		store: treemap.New[K, struct{}](),
 	}
@@ -36,10 +36,12 @@ func NewUnsafeStoreTreeMapKey[K constraints.Ordered](values ...K) *unsafeTreeMap
 }
 
 func (t *unsafeTreeMapStore[K, V]) Clear() {
+
 	t.store.Clear()
 }
 
-func (t *unsafeTreeMapStore[K, V]) Clone() Store[K, V] {
+func (t *unsafeTreeMapStore[K, V]) Clone() store[K, V] {
+
 	clone := treemap.New[K, V]()
 
 	for iter := t.store.Iterator(); iter.Valid(); iter.Next() {
@@ -56,6 +58,7 @@ func (t *unsafeTreeMapStore[K, V]) Contains(key K) bool {
 }
 
 func (t *unsafeTreeMapStore[K, V]) Delete(key K) {
+	t.store.Del(key)
 }
 
 func (t *unsafeTreeMapStore[K, V]) Get(key K) (V, bool) {
@@ -77,6 +80,7 @@ func (t *unsafeTreeMapStore[K, V]) Len() int {
 }
 
 func (t *unsafeTreeMapStore[K, V]) Upsert(key K, value V) {
+	t.store.Set(key, value)
 }
 
-var _ Store[string, string] = &unsafeTreeMapStore[string, string]{}
+var _ store[string, string] = &unsafeTreeMapStore[string, string]{}

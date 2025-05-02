@@ -6,7 +6,7 @@ type unsafeMapStore[K comparable, V any] struct {
 	store map[K]V
 }
 
-func NewUnsafeMapStore[K comparable, V any](selector func(V) K, values ...V) *unsafeMapStore[K, V] {
+func newStoreUnsafeMapKV[K comparable, V any](selector func(V) K, values ...V) *unsafeMapStore[K, V] {
 	store := &unsafeMapStore[K, V]{
 		store: make(map[K]V, len(values)),
 	}
@@ -21,7 +21,7 @@ func NewUnsafeMapStore[K comparable, V any](selector func(V) K, values ...V) *un
 // NewStoreMapKey creates a new map store for the given keys.
 // The underlying data structure is a hash-map.
 // This store is thread-safe.
-func NewUnsafeStoreMapKey[K comparable](values ...K) *unsafeMapStore[K, struct{}] {
+func newStoreUnsafeMapK[K comparable](values ...K) *unsafeMapStore[K, struct{}] {
 	store := &unsafeMapStore[K, struct{}]{
 		store: make(map[K]struct{}, len(values)),
 	}
@@ -71,7 +71,7 @@ func (m *unsafeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 	}
 }
 
-func (m *unsafeMapStore[K, V]) Clone() Store[K, V] {
+func (m *unsafeMapStore[K, V]) Clone() store[K, V] {
 	store := &unsafeMapStore[K, V]{
 		store: make(map[K]V, m.Len()),
 	}
@@ -83,4 +83,4 @@ func (m *unsafeMapStore[K, V]) Clone() Store[K, V] {
 	return store
 }
 
-var _ Store[string, string] = &unsafeMapStore[string, string]{}
+var _ store[string, string] = &unsafeMapStore[string, string]{}

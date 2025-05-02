@@ -124,52 +124,52 @@ type KeyValueSet[K constraints.Ordered, V any] interface {
 	Selector(V) K
 }
 
-type keyValueSet[K constraints.Ordered, V any, S Store[K, V]] struct {
+type keyValueSet[K constraints.Ordered, V any, S store[K, V]] struct {
 	data     S
 	selector func(V) K
 	newStore func(len int) S
 }
 
-// NewKeyValueSet creates a new key-value set implementation.
+// NewKeyValue creates a new key-value set implementation.
 // It requires a selector function that extracts the key from the given values.
 // Optionally, it can be initialized with one or more values.
 //
 // Example:
 //
 //	// Create an unsafe set of User structs, using ID as the key.
-//	userSet := kset.NewKeyValueUnsafe(func(u User) int { return u.ID }, user1, user2)
-func NewKeyValueSet[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeyValueSet[K, V] {
+//	userSet := kset.NewKeyValue(kset.HashMap, func(u User) int { return u.ID }, user1, user2)
+func NewKeyValue[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeyValueSet[K, V] {
 	switch storeType {
 	case HashMap:
 		return &keyValueSet[K, V, *safeMapStore[K, V]]{
-			data:     NewStoreMapKeyValue(selector, values...),
+			data:     newStoreMapKV(selector, values...),
 			selector: selector,
 			newStore: func(len int) *safeMapStore[K, V] {
-				return NewStoreMapKeyValue(selector)
+				return newStoreMapKV(selector)
 			},
 		}
 	case HashMapUnsafe:
 		return &keyValueSet[K, V, *unsafeMapStore[K, V]]{
-			data:     NewUnsafeMapStore(selector, values...),
+			data:     newStoreUnsafeMapKV(selector, values...),
 			selector: selector,
 			newStore: func(len int) *unsafeMapStore[K, V] {
-				return NewUnsafeMapStore(selector)
+				return newStoreUnsafeMapKV(selector)
 			},
 		}
 	case TreeMap:
 		return &keyValueSet[K, V, *treeMapStore[K, V]]{
-			data:     NewStoreTreeMapKeyValue(selector, values...),
+			data:     newStoreTreeMapKV(selector, values...),
 			selector: selector,
 			newStore: func(len int) *treeMapStore[K, V] {
-				return NewStoreTreeMapKeyValue(selector)
+				return newStoreTreeMapKV(selector)
 			},
 		}
 	case TreeMapUnsafe:
 		return &keyValueSet[K, V, *unsafeTreeMapStore[K, V]]{
-			data:     NewUnsafeStoreTreeMapKeyValue(selector, values...),
+			data:     newStoreUnsafeTreeMapKV(selector, values...),
 			selector: selector,
 			newStore: func(len int) *unsafeTreeMapStore[K, V] {
-				return NewUnsafeStoreTreeMapKeyValue(selector)
+				return newStoreUnsafeTreeMapKV(selector)
 			},
 		}
 	default:
@@ -255,7 +255,9 @@ func (k *keyValueSet[K, V, S]) Intersects(other Set[K]) bool {
 
 func (k *keyValueSet[K, V, S]) Difference(other Set[K]) KeyValueSet[K, V] {
 	diff := &keyValueSet[K, V, S]{
-		data: k.data.Clone().(S),
+		data:     k.newStore(k.Len()),
+		newStore: k.newStore,
+		selector: k.selector,
 	}
 
 	for key, value := range k.data.Iter() {
@@ -356,7 +358,7 @@ func (k *keyValueSet[K, V, S]) IterKeys() iter.Seq[K] {
 
 func (k *keyValueSet[K, V, S]) Pop() (V, bool) {
 	for key, value := range k.data.Iter() {
-		k.data.Delete(key)
+		defer k.data.Delete(key)
 		return value, true
 	}
 

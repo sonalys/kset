@@ -13,7 +13,7 @@ type treeMapStore[K constraints.Ordered, V any] struct {
 	store *treemap.TreeMap[K, V]
 }
 
-func NewStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V) K, values ...V) *treeMapStore[K, V] {
+func newStoreTreeMapKV[K constraints.Ordered, V any](selector func(V) K, values ...V) *treeMapStore[K, V] {
 	store := &treeMapStore[K, V]{
 		store: treemap.New[K, V](),
 	}
@@ -25,7 +25,7 @@ func NewStoreTreeMapKeyValue[K constraints.Ordered, V any](selector func(V) K, v
 	return store
 }
 
-func NewStoreTreeMapKey[K constraints.Ordered](values ...K) *treeMapStore[K, struct{}] {
+func newStoreTreeMapK[K constraints.Ordered](values ...K) *treeMapStore[K, struct{}] {
 	store := &treeMapStore[K, struct{}]{
 		store: treemap.New[K, struct{}](),
 	}
@@ -44,7 +44,7 @@ func (t *treeMapStore[K, V]) Clear() {
 	t.store.Clear()
 }
 
-func (t *treeMapStore[K, V]) Clone() Store[K, V] {
+func (t *treeMapStore[K, V]) Clone() store[K, V] {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
@@ -101,4 +101,4 @@ func (t *treeMapStore[K, V]) Upsert(key K, value V) {
 	t.store.Set(key, value)
 }
 
-var _ Store[string, string] = &treeMapStore[string, string]{}
+var _ store[string, string] = &treeMapStore[string, string]{}

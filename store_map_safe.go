@@ -10,11 +10,11 @@ type safeMapStore[K comparable, V any] struct {
 	store map[K]V
 }
 
-// NewStoreMapKeyValue creates a new map store for the given values.
+// newStoreMapKV creates a new map store for the given values.
 // The map key is created by the selector function.
 // The underlying data structure is a hash-map.
 // This store is thread-safe.
-func NewStoreMapKeyValue[K comparable, V any](selector func(V) K, values ...V) *safeMapStore[K, V] {
+func newStoreMapKV[K comparable, V any](selector func(V) K, values ...V) *safeMapStore[K, V] {
 	store := &safeMapStore[K, V]{
 		store: make(map[K]V, len(values)),
 	}
@@ -26,10 +26,10 @@ func NewStoreMapKeyValue[K comparable, V any](selector func(V) K, values ...V) *
 	return store
 }
 
-// NewStoreMapKey creates a new map store for the given keys.
+// newStoreMapK creates a new map store for the given keys.
 // The underlying data structure is a hash-map.
 // This store is thread-safe.
-func NewStoreMapKey[K comparable](values ...K) *safeMapStore[K, struct{}] {
+func newStoreMapK[K comparable](values ...K) *safeMapStore[K, struct{}] {
 	store := &safeMapStore[K, struct{}]{
 		store: make(map[K]struct{}, len(values)),
 	}
@@ -95,7 +95,7 @@ func (m *safeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 	}
 }
 
-func (m *safeMapStore[K, V]) Clone() Store[K, V] {
+func (m *safeMapStore[K, V]) Clone() store[K, V] {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -110,4 +110,4 @@ func (m *safeMapStore[K, V]) Clone() Store[K, V] {
 	return store
 }
 
-var _ Store[string, string] = &safeMapStore[string, string]{}
+var _ store[string, string] = &safeMapStore[string, string]{}

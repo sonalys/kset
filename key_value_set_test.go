@@ -13,7 +13,7 @@ func testKeyer(v int) int {
 }
 
 func newKV[K constraints.Ordered, V any](selector func(V) K, values ...V) kset.KeyValueSet[K, V] {
-	return kset.NewKeyValueSet(kset.TreeMapUnsafe, selector, values...)
+	return kset.NewKeyValue(kset.HashMap, selector, values...)
 }
 
 func Test_Append(t *testing.T) {
