@@ -7,66 +7,105 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-type unsafeTreeMapStore[K constraints.Ordered, V any] struct {
-	store *treemap.TreeMap[K, V]
+type unsafeTreeMapStore[Key constraints.Ordered, Value any] struct {
+	store *treemap.TreeMap[Key, Value]
 }
 
-func newStoreUnsafeTreeMapKV[K constraints.Ordered, V any](selector func(V) K, values ...V) *unsafeTreeMapStore[K, V] {
-	store := &unsafeTreeMapStore[K, V]{
-		store: treemap.New[K, V](),
+// UnsafeTreeMapKeyValue is a thread-unsafe red-black tree key-value set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(logN)		O(logN)
+//	Insert			O(logN)		O(logN)
+//	Delete			O(logN)		O(logN)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func UnsafeTreeMapKeyValue[Key constraints.Ordered, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
+	store := &unsafeTreeMapStore[Key, Value]{
+		store: treemap.New[Key, Value](),
 	}
 
-	for _, value := range values {
-		store.Upsert(selector(value), value)
+	for i := range values {
+		store.store.Set(selector(values[i]), values[i])
 	}
 
-	return store
+	return &keyValueSet[Key, Value, *unsafeTreeMapStore[Key, Value]]{
+		store:    store,
+		selector: selector,
+		newStore: func(i int) *unsafeTreeMapStore[Key, Value] {
+			return &unsafeTreeMapStore[Key, Value]{
+				store: treemap.New[Key, Value](),
+			}
+		},
+	}
 }
 
-func newStoreUnsafeTreeMapK[K constraints.Ordered](values ...K) *unsafeTreeMapStore[K, struct{}] {
-	store := &unsafeTreeMapStore[K, struct{}]{
-		store: treemap.New[K, struct{}](),
+// UnsafeTreeMapKey is a thread-unsafe red-black tree key set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(logN)		O(logN)
+//	Insert			O(logN)		O(logN)
+//	Delete			O(logN)		O(logN)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func UnsafeTreeMapKey[Key constraints.Ordered](keys ...Key) KeySet[Key] {
+	store := &unsafeTreeMapStore[Key, empty]{
+		store: treemap.New[Key, empty](),
 	}
 
-	for _, value := range values {
-		store.Upsert(value, struct{}{})
+	for _, value := range keys {
+		store.Upsert(value, empty{})
 	}
 
-	return store
+	return &keySet[Key, *unsafeTreeMapStore[Key, empty]]{
+		store: store,
+		newStore: func(keys ...Key) *unsafeTreeMapStore[Key, empty] {
+			store := &unsafeTreeMapStore[Key, empty]{
+				store: treemap.New[Key, empty](),
+			}
+
+			for _, value := range keys {
+				store.Upsert(value, empty{})
+			}
+
+			return store
+		},
+	}
 }
 
-func (t *unsafeTreeMapStore[K, V]) Clear() {
-
+func (t *unsafeTreeMapStore[Key, Value]) Clear() {
 	t.store.Clear()
 }
 
-func (t *unsafeTreeMapStore[K, V]) Clone() store[K, V] {
-
-	clone := treemap.New[K, V]()
+func (t *unsafeTreeMapStore[Key, Value]) Clone() Storage[Key, Value] {
+	clone := treemap.New[Key, Value]()
 
 	for iter := t.store.Iterator(); iter.Valid(); iter.Next() {
 		clone.Set(iter.Key(), iter.Value())
 	}
 
-	return &unsafeTreeMapStore[K, V]{
+	return &unsafeTreeMapStore[Key, Value]{
 		store: clone,
 	}
 }
 
-func (t *unsafeTreeMapStore[K, V]) Contains(key K) bool {
+func (t *unsafeTreeMapStore[Key, Value]) Contains(key Key) bool {
 	return t.store.Contains(key)
 }
 
-func (t *unsafeTreeMapStore[K, V]) Delete(key K) {
+func (t *unsafeTreeMapStore[Key, Value]) Delete(key Key) {
 	t.store.Del(key)
 }
 
-func (t *unsafeTreeMapStore[K, V]) Get(key K) (V, bool) {
+func (t *unsafeTreeMapStore[Key, Value]) Get(key Key) (Value, bool) {
 	return t.store.Get(key)
 }
 
-func (t *unsafeTreeMapStore[K, V]) Iter() iter.Seq2[K, V] {
-	return func(yield func(K, V) bool) {
+func (t *unsafeTreeMapStore[Key, Value]) Iter() iter.Seq2[Key, Value] {
+	return func(yield func(Key, Value) bool) {
 		for iter := t.store.Iterator(); iter.Valid(); iter.Next() {
 			if !yield(iter.Key(), iter.Value()) {
 				return
@@ -75,12 +114,12 @@ func (t *unsafeTreeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 	}
 }
 
-func (t *unsafeTreeMapStore[K, V]) Len() int {
+func (t *unsafeTreeMapStore[Key, Value]) Len() int {
 	return t.store.Len()
 }
 
-func (t *unsafeTreeMapStore[K, V]) Upsert(key K, value V) {
+func (t *unsafeTreeMapStore[Key, Value]) Upsert(key Key, value Value) {
 	t.store.Set(key, value)
 }
 
-var _ store[string, string] = &unsafeTreeMapStore[string, string]{}
+var _ Storage[string, string] = &unsafeTreeMapStore[string, string]{}

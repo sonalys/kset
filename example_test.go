@@ -7,7 +7,7 @@ import (
 	"github.com/sonalys/kset"
 )
 
-func ExampleNewKeyValueSet() {
+func ExampleHashMapKeyValue() {
 	type User struct {
 		ID   int
 		Name string
@@ -15,7 +15,7 @@ func ExampleNewKeyValueSet() {
 
 	userIDSelector := func(u User) int { return u.ID }
 
-	userSet := kset.NewKeyValueSet(kset.TreeMap, userIDSelector,
+	userSet := kset.HashMapKeyValue(userIDSelector,
 		User{ID: 1, Name: "Alice"},
 		User{ID: 2, Name: "Bob"},
 	)
@@ -36,8 +36,8 @@ func ExampleNewKeyValueSet() {
 	// Set Elements: [{ID:1 Name:Alice Smith} {ID:2 Name:Bob}]
 }
 
-func ExampleNewKeySet() {
-	setA := kset.NewKeySet(kset.TreeMap, 1, 2, 3, 1)
+func ExampleTreeMapKey() {
+	setA := kset.TreeMapKey(1, 2, 3, 1)
 
 	sortSlice := func(slice []int) []int {
 		slices.Sort(slice)
@@ -49,7 +49,7 @@ func ExampleNewKeySet() {
 	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
 	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
 
-	setB := kset.NewKeySet(kset.TreeMap, 3, 4, 5)
+	setB := kset.TreeMapKey(3, 4, 5)
 	setB.Append(3, 4, 5)
 
 	// Set operations

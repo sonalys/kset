@@ -2,67 +2,99 @@ package kset
 
 import "iter"
 
-type unsafeMapStore[K comparable, V any] struct {
-	store map[K]V
+type unsafeMapStore[Key comparable, Value any] struct {
+	store map[Key]Value
 }
 
-func newStoreUnsafeMapKV[K comparable, V any](selector func(V) K, values ...V) *unsafeMapStore[K, V] {
-	store := &unsafeMapStore[K, V]{
-		store: make(map[K]V, len(values)),
+// UnsafeHashMapKeyValue is a thread-unsafe hash table key-value set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(1)		O(logN^2)
+//	Insert			O(1)		O(logN^2)
+//	Delete			O(1)		O(n)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func UnsafeHashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
+	store := &unsafeMapStore[Key, Value]{
+		store: make(map[Key]Value, len(values)),
+	}
+
+	for i := range values {
+		store.store[selector(values[i])] = values[i]
+	}
+
+	return &keyValueSet[Key, Value, *unsafeMapStore[Key, Value]]{
+		store:    store,
+		selector: selector,
+		newStore: func(i int) *unsafeMapStore[Key, Value] {
+			return &unsafeMapStore[Key, Value]{
+				store: make(map[Key]Value, len(values)),
+			}
+		},
+	}
+}
+
+// UnsafeHashMapKey is a thread-unsafe hash table key set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(1)		O(logN^2)
+//	Insert			O(1)		O(logN^2)
+//	Delete			O(1)		O(n)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func UnsafeHashMapKey[Key comparable](values ...Key) KeySet[Key] {
+	store := &unsafeMapStore[Key, empty]{
+		store: make(map[Key]empty, len(values)),
 	}
 
 	for _, value := range values {
-		store.Upsert(selector(value), value)
+		store.Upsert(value, empty{})
 	}
 
-	return store
+	return &keySet[Key, *unsafeMapStore[Key, empty]]{
+		store: store,
+		newStore: func(k ...Key) *unsafeMapStore[Key, empty] {
+			return &unsafeMapStore[Key, empty]{
+				store: make(map[Key]empty, len(values)),
+			}
+		},
+	}
 }
 
-// NewStoreMapKey creates a new map store for the given keys.
-// The underlying data structure is a hash-map.
-// This store is thread-safe.
-func newStoreUnsafeMapK[K comparable](values ...K) *unsafeMapStore[K, struct{}] {
-	store := &unsafeMapStore[K, struct{}]{
-		store: make(map[K]struct{}, len(values)),
-	}
-
-	for _, value := range values {
-		store.Upsert(value, struct{}{})
-	}
-
-	return store
-}
-
-func (m *unsafeMapStore[K, V]) Clear() {
+func (m *unsafeMapStore[Key, Value]) Clear() {
 	for k := range m.store {
 		delete(m.store, k)
 	}
 }
 
-func (m *unsafeMapStore[K, V]) Contains(key K) bool {
+func (m *unsafeMapStore[Key, Value]) Contains(key Key) bool {
 	_, ok := m.store[key]
 	return ok
 }
 
-func (m *unsafeMapStore[K, V]) Delete(key K) {
+func (m *unsafeMapStore[Key, Value]) Delete(key Key) {
 	delete(m.store, key)
 }
 
-func (m *unsafeMapStore[K, V]) Get(key K) (V, bool) {
+func (m *unsafeMapStore[Key, Value]) Get(key Key) (Value, bool) {
 	value, ok := m.store[key]
 	return value, ok
 }
 
-func (m *unsafeMapStore[K, V]) Len() int {
+func (m *unsafeMapStore[Key, Value]) Len() int {
 	return len(m.store)
 }
 
-func (m *unsafeMapStore[K, V]) Upsert(key K, value V) {
+func (m *unsafeMapStore[Key, Value]) Upsert(key Key, value Value) {
 	m.store[key] = value
 }
 
-func (m *unsafeMapStore[K, V]) Iter() iter.Seq2[K, V] {
-	return func(yield func(K, V) bool) {
+func (m *unsafeMapStore[Key, Value]) Iter() iter.Seq2[Key, Value] {
+	return func(yield func(Key, Value) bool) {
 		for key, value := range m.store {
 			if !yield(key, value) {
 				return
@@ -71,9 +103,9 @@ func (m *unsafeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 	}
 }
 
-func (m *unsafeMapStore[K, V]) Clone() store[K, V] {
-	store := &unsafeMapStore[K, V]{
-		store: make(map[K]V, m.Len()),
+func (m *unsafeMapStore[Key, Value]) Clone() Storage[Key, Value] {
+	store := &unsafeMapStore[Key, Value]{
+		store: make(map[Key]Value, m.Len()),
 	}
 
 	for key, value := range m.store {
@@ -83,4 +115,4 @@ func (m *unsafeMapStore[K, V]) Clone() store[K, V] {
 	return store
 }
 
-var _ store[string, string] = &unsafeMapStore[string, string]{}
+var _ Storage[string, string] = &unsafeMapStore[string, string]{}

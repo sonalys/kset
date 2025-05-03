@@ -13,18 +13,21 @@ func testKeyer(v int) int {
 }
 
 func forEachStore[K constraints.Ordered, V any](t *testing.T, f func(t *testing.T, constructor func(selector func(V) K, values ...V) kset.KeyValueSet[K, V])) {
-	stores := []kset.StoreType{
-		kset.HashMap,
-		kset.HashMapUnsafe,
-		kset.TreeMap,
-		kset.TreeMapUnsafe,
+	type tc struct {
+		name string
+		f    func(selector func(V) K, values ...V) kset.KeyValueSet[K, V]
 	}
 
-	for _, storeType := range stores {
-		t.Run(storeType.String(), func(t *testing.T) {
-			f(t, func(selector func(V) K, values ...V) kset.KeyValueSet[K, V] {
-				return kset.NewKeyValueSet(storeType, selector, values...)
-			})
+	stores := []tc{
+		{name: "HashMapKeyValue", f: kset.HashMapKeyValue[K, V]},
+		{name: "UnsafeHashMapKeyValue", f: kset.UnsafeHashMapKeyValue[K, V]},
+		{name: "TreeMapKeyValue", f: kset.TreeMapKeyValue[K, V]},
+		{name: "UnsafeTreeMapKeyValue", f: kset.UnsafeTreeMapKeyValue[K, V]},
+	}
+
+	for _, tc := range stores {
+		t.Run(tc.name, func(t *testing.T) {
+			f(t, tc.f)
 		})
 	}
 }

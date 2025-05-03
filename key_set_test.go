@@ -9,18 +9,21 @@ import (
 )
 
 func forEachStoreK[K constraints.Ordered](t *testing.T, f func(t *testing.T, constructor func(keys ...K) kset.KeySet[K])) {
-	stores := []kset.StoreType{
-		kset.HashMap,
-		kset.HashMapUnsafe,
-		kset.TreeMap,
-		kset.TreeMapUnsafe,
+	type tc struct {
+		name string
+		f    func(keys ...K) kset.KeySet[K]
 	}
 
-	for _, storeType := range stores {
-		t.Run(storeType.String(), func(t *testing.T) {
-			f(t, func(values ...K) kset.KeySet[K] {
-				return kset.NewKeySet(storeType, values...)
-			})
+	stores := []tc{
+		{name: "HashMapKey", f: kset.HashMapKey[K]},
+		{name: "UnsafeHashMapKey", f: kset.UnsafeHashMapKey[K]},
+		{name: "TreeMapKey", f: kset.TreeMapKey[K]},
+		{name: "UnsafeTreeMapKey", f: kset.UnsafeTreeMapKey[K]},
+	}
+
+	for _, tc := range stores {
+		t.Run(tc.name, func(t *testing.T) {
+			f(t, tc.f)
 		})
 	}
 }

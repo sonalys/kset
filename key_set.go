@@ -1,23 +1,19 @@
 package kset
 
 import (
-	"fmt"
 	"iter"
-
-	"golang.org/x/exp/constraints"
 )
 
 // KeySet defines a key-only set.
-// K is the constraints.Ordered type used for the underlying map keys.
-type KeySet[K constraints.Ordered] interface {
-	Set[K]
+type KeySet[Key any] interface {
+	Set[Key]
 
 	// Append upserts multiple elements to the set.
 	// It returns the number of elements that were actually added (i.e., were not already present).
 	// Example:
 	//  s := NewPrimitive(1)
 	//  count := s.Append(1, 2, 3) // count is 2
-	Append(values ...K) int
+	Append(values ...Key) int
 
 	// Clone creates a shallow copy of the set.
 	// Example:
@@ -25,21 +21,21 @@ type KeySet[K constraints.Ordered] interface {
 	//  s2 := s1.Clone() // s2 is {1, 2}, independent of s1
 	//  s2.Add(3)
 	//  // s1 is {1, 2}, s2 is {1, 2, 3}
-	Clone() KeySet[K]
+	Clone() KeySet[Key]
 
 	// Difference returns a new set containing elements that are in the current set but not in the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  diff := s1.Difference(s2) // diff is {1, 2}
-	Difference(other Set[K]) KeySet[K]
+	Difference(other Set[Key]) KeySet[Key]
 
 	// Intersect returns a new set containing elements that are common to both the current set and the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  intersection := s1.Intersect(s2) // intersection is {3}
-	Intersect(other Set[K]) KeySet[K]
+	Intersect(other Set[Key]) KeySet[Key]
 
 	// Each executes the given function fn for each element in the set.
 	// Iteration stops if fn returns false.
@@ -50,7 +46,7 @@ type KeySet[K constraints.Ordered] interface {
 	//      sum += v
 	//      return true // Continue iteration
 	//  }) // sum will be 6
-	Each(fn func(K) bool)
+	Each(fn func(Key) bool)
 
 	// Iter returns an iterator (iter.Seq) over the elements of the set.
 	// The order of iteration is not guaranteed.
@@ -59,27 +55,27 @@ type KeySet[K constraints.Ordered] interface {
 	//  for v := range s.Iter() {
 	//      fmt.Println(v) // Prints 1, 2, 3 in some order
 	//  }
-	Iter() iter.Seq[K]
+	Iter() iter.Seq[Key]
 
 	// Remove removes the specified elements from the set.
 	// Example:
 	//  s := NewPrimitive(1, 2, 3, 4)
 	//  s.Remove(2, 4) // s is {1, 3}
-	Remove(v ...K)
+	Remove(v ...Key)
 
 	// SymmetricDifference returns a new set containing elements that are in either the current set or the other set, but not both.
 	// Example:
 	//  s1 := NewPrimitive(1, 2, 3)
 	//  s2 := NewPrimitive(3, 4, 5)
 	//  symDiff := s1.SymmetricDifference(s2) // symDiff is {1, 2, 4, 5}
-	SymmetricDifference(other KeySet[K]) KeySet[K]
+	SymmetricDifference(other KeySet[Key]) KeySet[Key]
 
 	// Union returns a new set containing all elements from both the current set and the other set.
 	// Example:
 	//  s1 := NewPrimitive(1, 2)
 	//  s2 := NewPrimitive(2, 3)
 	//  union := s1.Union(s2) // union is {1, 2, 3}
-	Union(other KeySet[K]) KeySet[K]
+	Union(other KeySet[Key]) KeySet[Key]
 
 	// Pop removes and returns an arbitrary element from the set.
 	// It returns the removed element and true if the set was not empty, otherwise it returns the zero value of V and false.
@@ -88,109 +84,52 @@ type KeySet[K constraints.Ordered] interface {
 	//  v, ok := s.Pop() // v could be 1 or 2, ok is true
 	//  v, ok = s.Pop() // v is the remaining element, ok is true
 	//  v, ok = s.Pop() // v is 0, ok is false
-	Pop() (K, bool)
+	Pop() (Key, bool)
 
 	// ToSlice returns a slice containing all elements of the set.
 	// The order of elements in the slice is not guaranteed.
 	// Example:
 	//  s := NewPrimitive(3, 1, 2)
 	//  slice := s.ToSlice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
-	ToSlice() []K
+	ToSlice() []Key
 }
 
 // keySet is an implementation of KeySet.
 // K is the key, must be ordered.
 // S is just a generic type parameter for removing the store abstraction and accessing the implementation directly.
-type keySet[K constraints.Ordered, S store[K, struct{}]] struct {
-	store    S
-	newStore func(len int) S
-}
-
-// NewKeySet creates a key-only set from any given slice.
-// Optionally, it can be initialized with one or more values.
-//
-// Example:
-//
-//	// Create a set of User structs, using ID as the key.
-//	set := kset.NewKeySet(kset.HashMap, "id1", "id2")
-func NewKeySet[K constraints.Ordered](storeType StoreType, values ...K) KeySet[K] {
-	switch storeType {
-	case HashMap:
-		return &keySet[K, *safeMapStore[K, struct{}]]{
-			store: newStoreMapK(values...),
-			newStore: func(len int) *safeMapStore[K, struct{}] {
-				return newStoreMapK[K]()
-			},
-		}
-	case HashMapUnsafe:
-		return &keySet[K, *unsafeMapStore[K, struct{}]]{
-			store: newStoreUnsafeMapK(values...),
-			newStore: func(len int) *unsafeMapStore[K, struct{}] {
-				return newStoreUnsafeMapK[K]()
-			},
-		}
-	case TreeMap:
-		return &keySet[K, *treeMapStore[K, struct{}]]{
-			store: newStoreTreeMapK(values...),
-			newStore: func(len int) *treeMapStore[K, struct{}] {
-				return newStoreTreeMapK[K]()
-			},
-		}
-	case TreeMapUnsafe:
-		return &keySet[K, *unsafeTreeMapStore[K, struct{}]]{
-			store: newStoreUnsafeTreeMapK(values...),
-			newStore: func(len int) *unsafeTreeMapStore[K, struct{}] {
-				return newStoreUnsafeTreeMapK[K]()
-			},
-		}
-	default:
-		panic(fmt.Sprintf("type not supported: %s", storeType))
-	}
-}
-
-// NewKeySetSelect creates a key-only set from any given slice.
-// It requires a selector function to extract the keys from the values.
-//
-// Example:
-//
-//	// Create a set of User structs, using ID as the key.
-//	set := kset.NewKeySetSelect(kset.HashMap, func(u User) int { return u.id }, user1, user2)
-func NewKeySetSelect[K constraints.Ordered, V any](storeType StoreType, selector func(V) K, values ...V) KeySet[K] {
-	keys := make([]K, 0, len(values))
-	for i := range values {
-		keys = append(keys, selector(values[i]))
-	}
-	return NewKeySet(storeType, keys...)
+type keySet[Key any, Store Storage[Key, empty]] struct {
+	store    Store
+	newStore func(...Key) Store
 }
 
 // Append adds keys to the set. Returns the number of new keys added.
-func (k keySet[K, S]) Append(keys ...K) int {
+func (k keySet[Key, Store]) Append(keys ...Key) int {
 	prevLen := k.store.Len()
 	for _, key := range keys {
-		k.store.Upsert(key, struct{}{})
+		k.store.Upsert(key, empty{})
 	}
 	return k.store.Len() - prevLen
 }
 
 // Len returns the number of keys in the set.
-func (k keySet[K, S]) Len() int {
+func (k keySet[Key, Store]) Len() int {
 	return k.store.Len()
 }
 
 // Clear removes all keys from the set.
-func (k keySet[K, S]) Clear() {
+func (k keySet[Key, Store]) Clear() {
 	k.store.Clear()
 }
 
 // Clone creates a copy of the set.
-func (k keySet[K, S]) Clone() KeySet[K] {
-	return keySet[K, S]{
-		store: k.store.Clone().(S),
+func (k keySet[Key, Store]) Clone() KeySet[Key] {
+	return keySet[Key, Store]{
+		store: k.store.Clone().(Store),
 	}
 }
 
 // ContainsKeys checks if all specified keys are present in the set.
-func (k keySet[K, S]) ContainsKeys(keys ...K) bool {
+func (k keySet[Key, Store]) ContainsKeys(keys ...Key) bool {
 	for _, key := range keys {
 		if _, ok := k.store.Get(key); !ok {
 			return false
@@ -200,7 +139,7 @@ func (k keySet[K, S]) ContainsKeys(keys ...K) bool {
 }
 
 // ContainsAnyKey checks if any of the specified keys are present in the set.
-func (k keySet[K, S]) ContainsAnyKey(keys ...K) bool {
+func (k keySet[Key, Store]) ContainsAnyKey(keys ...Key) bool {
 	for _, key := range keys {
 		if _, ok := k.store.Get(key); ok {
 			return true
@@ -210,7 +149,7 @@ func (k keySet[K, S]) ContainsAnyKey(keys ...K) bool {
 }
 
 // Intersects checks if this set shares any keys with the other set.
-func (k keySet[K, S]) Intersects(other Set[K]) bool {
+func (k keySet[Key, Store]) Intersects(other Set[Key]) bool {
 	for key := range k.store.Iter() {
 		if other.ContainsKeys(key) {
 			return true
@@ -220,9 +159,9 @@ func (k keySet[K, S]) Intersects(other Set[K]) bool {
 }
 
 // Difference returns a new set with keys in this set but not in the other.
-func (k keySet[K, S]) Difference(other Set[K]) KeySet[K] {
-	diff := &keySet[K, S]{
-		store:    k.newStore(k.Len()),
+func (k keySet[Key, Store]) Difference(other Set[Key]) KeySet[Key] {
+	diff := &keySet[Key, Store]{
+		store:    k.newStore(),
 		newStore: k.newStore,
 	}
 	for key := range k.store.Iter() {
@@ -234,7 +173,7 @@ func (k keySet[K, S]) Difference(other Set[K]) KeySet[K] {
 }
 
 // Each executes a function for each key in the set until the function returns false.
-func (k keySet[K, S]) Each(f func(K) bool) {
+func (k keySet[Key, Store]) Each(f func(Key) bool) {
 	for key := range k.store.Iter() {
 		if !f(key) {
 			break
@@ -243,7 +182,7 @@ func (k keySet[K, S]) Each(f func(K) bool) {
 }
 
 // Equal checks if this set is equal to another set (contains the same keys).
-func (k keySet[K, S]) Equal(other Set[K]) bool {
+func (k keySet[Key, Store]) Equal(other Set[Key]) bool {
 	if k.Len() != other.Len() {
 		return false
 	}
@@ -256,9 +195,9 @@ func (k keySet[K, S]) Equal(other Set[K]) bool {
 }
 
 // Intersect returns a new set with keys common to both this set and the other.
-func (k keySet[K, S]) Intersect(other Set[K]) KeySet[K] {
-	intersection := &keySet[K, S]{
-		store:    k.newStore(k.Len()),
+func (k keySet[Key, Store]) Intersect(other Set[Key]) KeySet[Key] {
+	intersection := &keySet[Key, Store]{
+		store:    k.newStore(),
 		newStore: k.newStore,
 	}
 
@@ -272,22 +211,22 @@ func (k keySet[K, S]) Intersect(other Set[K]) KeySet[K] {
 }
 
 // IsEmpty checks if the set is empty.
-func (k keySet[K, S]) IsEmpty() bool {
+func (k keySet[Key, Store]) IsEmpty() bool {
 	return k.Len() == 0
 }
 
 // IsProperSubset checks if this set is a proper subset of the other set.
-func (k keySet[K, S]) IsProperSubset(other Set[K]) bool {
+func (k keySet[Key, Store]) IsProperSubset(other Set[Key]) bool {
 	return k.Len() < other.Len() && k.IsSubset(other)
 }
 
 // IsProperSuperset checks if this set is a proper superset of the other set.
-func (k keySet[K, S]) IsProperSuperset(other Set[K]) bool {
+func (k keySet[Key, Store]) IsProperSuperset(other Set[Key]) bool {
 	return k.Len() > other.Len() && k.IsSuperset(other)
 }
 
 // IsSubset checks if this set is a subset of the other set.
-func (k keySet[K, S]) IsSubset(other Set[K]) bool {
+func (k keySet[Key, Store]) IsSubset(other Set[Key]) bool {
 	if k.Len() > other.Len() {
 		return false
 	}
@@ -300,13 +239,13 @@ func (k keySet[K, S]) IsSubset(other Set[K]) bool {
 }
 
 // IsSuperset checks if this set is a superset of the other set.
-func (k keySet[K, S]) IsSuperset(other Set[K]) bool {
+func (k keySet[Key, Store]) IsSuperset(other Set[Key]) bool {
 	return other.IsSubset(k)
 }
 
 // Iter returns an iterator for the keys in the set.
-func (k keySet[K, S]) Iter() iter.Seq[K] {
-	return func(yield func(K) bool) {
+func (k keySet[Key, Store]) Iter() iter.Seq[Key] {
+	return func(yield func(Key) bool) {
 		for key := range k.store.Iter() {
 			if !yield(key) {
 				break
@@ -316,32 +255,32 @@ func (k keySet[K, S]) Iter() iter.Seq[K] {
 }
 
 // Iter returns an iterator for the keys in the set.
-func (k keySet[K, S]) IterKeys() iter.Seq[K] {
+func (k keySet[Key, Store]) IterKeys() iter.Seq[Key] {
 	return k.Iter()
 }
 
 // Pop removes and returns an arbitrary key from the set.
-// The second return value indicates if a key was removed (true) or if the set was empty (false).
-func (k keySet[K, S]) Pop() (K, bool) {
+// The second return Store indicates if a key was removed (true) or if the set was empty (false).
+func (k keySet[Key, Store]) Pop() (Key, bool) {
 	for key := range k.store.Iter() {
 		defer k.store.Delete(key)
 		return key, true
 	}
-	var zero K
+	var zero Key
 	return zero, false
 }
 
 // Remove removes the specified keys from the set.
-func (k keySet[K, S]) Remove(keys ...K) {
+func (k keySet[Key, Store]) Remove(keys ...Key) {
 	for _, key := range keys {
 		k.store.Delete(key)
 	}
 }
 
 // SymmetricDifference returns a new set with keys in either this set or the other, but not both.
-func (k keySet[K, S]) SymmetricDifference(other KeySet[K]) KeySet[K] {
-	sd := &keySet[K, S]{
-		store:    k.newStore(k.Len()),
+func (k keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] {
+	sd := &keySet[Key, Store]{
+		store:    k.newStore(),
 		newStore: k.newStore,
 	}
 	for key := range k.store.Iter() {
@@ -358,8 +297,8 @@ func (k keySet[K, S]) SymmetricDifference(other KeySet[K]) KeySet[K] {
 }
 
 // ToSlice returns a slice containing all the keys in the set. The order is not guaranteed.
-func (k keySet[K, S]) ToSlice() []K {
-	result := make([]K, 0, k.Len())
+func (k keySet[Key, Store]) ToSlice() []Key {
+	result := make([]Key, 0, k.Len())
 	for key := range k.store.Iter() {
 		result = append(result, key)
 	}
@@ -367,7 +306,7 @@ func (k keySet[K, S]) ToSlice() []K {
 }
 
 // Union returns a new set with all keys from both this set and the other.
-func (k keySet[K, S]) Union(other KeySet[K]) KeySet[K] {
+func (k keySet[Key, Store]) Union(other KeySet[Key]) KeySet[Key] {
 	union := k.Clone()
 	for key := range other.Iter() {
 		union.Append(key)
@@ -376,4 +315,4 @@ func (k keySet[K, S]) Union(other KeySet[K]) KeySet[K] {
 }
 
 // Ensure unsafeKeySet implements KeySet at compile time.
-var _ KeySet[string] = keySet[string, *treeMapStore[string, struct{}]]{}
+var _ KeySet[string] = keySet[string, *treeMapStore[string, empty]]{}

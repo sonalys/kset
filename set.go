@@ -2,13 +2,11 @@ package kset
 
 import (
 	"iter"
-
-	"golang.org/x/exp/constraints"
 )
 
 // Set defines the interface of the behavior expected from only comparing keys, and not values.
 // This interface is useful for comparing sets that shares the same key type, but not the same value.
-type Set[K constraints.Ordered] interface {
+type Set[Key any] interface {
 	// Len returns the number of elements in the set.
 	// Example:
 	//  s := NewPrimitive(1, 2)
@@ -28,7 +26,7 @@ type Set[K constraints.Ordered] interface {
 	//  s := NewPrimitive(1, 2, 3)
 	//  hasAll := s.ContainsKeys(1, 2) // hasAll is true
 	//  hasAll = s.ContainsKeys(1, 4) // hasAll is false
-	ContainsKeys(keys ...K) bool
+	ContainsKeys(keys ...Key) bool
 
 	// ContainsAny checks if any of the specified elements are present in the set.
 	// It returns true if at least one element v is in the set, false otherwise.
@@ -36,7 +34,7 @@ type Set[K constraints.Ordered] interface {
 	//  s := NewPrimitive(1, 2)
 	//  hasAny := s.ContainsAnyKey(2, 4) // hasAny is true
 	//  hasAny = s.ContainsAnyKey(4, 5) // hasAny is false
-	ContainsAnyKey(keys ...K) bool
+	ContainsAnyKey(keys ...Key) bool
 
 	// IsEmpty checks if the set contains no elements.
 	// Example:
@@ -54,7 +52,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(1, 2)
 	//  isProper := s1.IsProperSubset(s2) // isProper is true
 	//  isProper = s1.IsProperSubset(s3) // isProper is false
-	IsProperSubset(other Set[K]) bool
+	IsProperSubset(other Set[Key]) bool
 
 	// IsProperSuperset checks if the set is a proper superset of another set.
 	// A proper superset is a superset that is not equal to the other set.
@@ -64,7 +62,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(1, 2, 3)
 	//  isProper := s1.IsProperSuperset(s2) // isProper is true
 	//  isProper = s1.IsProperSuperset(s3) // isProper is false
-	IsProperSuperset(other Set[K]) bool
+	IsProperSuperset(other Set[Key]) bool
 
 	// IsSubset checks if the set is a subset of another set (i.e., all elements of the current set are also in the other set).
 	// Example:
@@ -73,7 +71,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(1, 3)
 	//  isSub := s1.IsSubset(s2) // isSub is true
 	//  isSub = s1.IsSubset(s3) // isSub is false
-	IsSubset(other Set[K]) bool
+	IsSubset(other Set[Key]) bool
 
 	// IsSuperset checks if the set is a superset of another set (i.e., all elements of the other set are also in the current set).
 	// Example:
@@ -82,7 +80,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(1, 4)
 	//  isSuper := s1.IsSuperset(s2) // isSuper is true
 	//  isSuper = s1.IsSuperset(s3) // isSuper is false
-	IsSuperset(other Set[K]) bool
+	IsSuperset(other Set[Key]) bool
 
 	// Intersects checks if the set has at least one element in common with another set.
 	// Example:
@@ -91,7 +89,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(4, 5)
 	//  intersects := s1.Intersects(s2) // intersects is true
 	//  intersects = s1.Intersects(s3) // intersects is false
-	Intersects(other Set[K]) bool
+	Intersects(other Set[Key]) bool
 
 	// Equal checks if the set is equal to another set (i.e., contains the same elements).
 	// Example:
@@ -100,7 +98,7 @@ type Set[K constraints.Ordered] interface {
 	//  s3 := NewPrimitive(1, 3)
 	//  isEqual := s1.Equal(s2) // isEqual is true
 	//  isEqual = s1.Equal(s3) // isEqual is false
-	Equal(other Set[K]) bool
+	Equal(other Set[Key]) bool
 
-	IterKeys() iter.Seq[K]
+	IterKeys() iter.Seq[Key]
 }

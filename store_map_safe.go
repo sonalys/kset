@@ -5,43 +5,71 @@ import (
 	"sync"
 )
 
-type safeMapStore[K comparable, V any] struct {
+type safeMapStore[Key comparable, Value any] struct {
 	mutex sync.RWMutex
-	store map[K]V
+	store map[Key]Value
 }
 
-// newStoreMapKV creates a new map store for the given values.
-// The map key is created by the selector function.
-// The underlying data structure is a hash-map.
-// This store is thread-safe.
-func newStoreMapKV[K comparable, V any](selector func(V) K, values ...V) *safeMapStore[K, V] {
-	store := &safeMapStore[K, V]{
-		store: make(map[K]V, len(values)),
+// HashMapKeyValue is a thread-safe hash table key-value set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(1)		O(logN^2)
+//	Insert			O(1)		O(logN^2)
+//	Delete			O(1)		O(n)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func HashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
+	store := &safeMapStore[Key, Value]{
+		store: make(map[Key]Value, len(values)),
+	}
+
+	for i := range values {
+		store.store[selector(values[i])] = values[i]
+	}
+
+	return &keyValueSet[Key, Value, *safeMapStore[Key, Value]]{
+		store:    store,
+		selector: selector,
+		newStore: func(i int) *safeMapStore[Key, Value] {
+			return &safeMapStore[Key, Value]{
+				store: make(map[Key]Value, len(values)),
+			}
+		},
+	}
+}
+
+// HashMapKey is a thread-safe hash table key set implementation.
+//
+//	Operation		Average		WorstCase
+//	Search			O(1)		O(logN^2)
+//	Insert			O(1)		O(logN^2)
+//	Delete			O(1)		O(n)
+//
+// Space complexity
+//
+//	Space			O(n)		O(n)
+func HashMapKey[Key comparable](values ...Key) KeySet[Key] {
+	store := &safeMapStore[Key, empty]{
+		store: make(map[Key]empty, len(values)),
 	}
 
 	for _, value := range values {
-		store.Upsert(selector(value), value)
+		store.Upsert(value, empty{})
 	}
 
-	return store
+	return &keySet[Key, *safeMapStore[Key, empty]]{
+		store: store,
+		newStore: func(k ...Key) *safeMapStore[Key, empty] {
+			return &safeMapStore[Key, empty]{
+				store: make(map[Key]empty, len(values)),
+			}
+		},
+	}
 }
 
-// newStoreMapK creates a new map store for the given keys.
-// The underlying data structure is a hash-map.
-// This store is thread-safe.
-func newStoreMapK[K comparable](values ...K) *safeMapStore[K, struct{}] {
-	store := &safeMapStore[K, struct{}]{
-		store: make(map[K]struct{}, len(values)),
-	}
-
-	for _, value := range values {
-		store.Upsert(value, struct{}{})
-	}
-
-	return store
-}
-
-func (m *safeMapStore[K, V]) Clear() {
+func (m *safeMapStore[Key, Value]) Clear() {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -50,7 +78,7 @@ func (m *safeMapStore[K, V]) Clear() {
 	}
 }
 
-func (m *safeMapStore[K, V]) Contains(key K) bool {
+func (m *safeMapStore[Key, Value]) Contains(key Key) bool {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -58,33 +86,33 @@ func (m *safeMapStore[K, V]) Contains(key K) bool {
 	return ok
 }
 
-func (m *safeMapStore[K, V]) Delete(key K) {
+func (m *safeMapStore[Key, Value]) Delete(key Key) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	delete(m.store, key)
 }
 
-func (m *safeMapStore[K, V]) Get(key K) (V, bool) {
+func (m *safeMapStore[Key, Value]) Get(key Key) (Value, bool) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	value, ok := m.store[key]
 	return value, ok
 }
 
-func (m *safeMapStore[K, V]) Len() int {
+func (m *safeMapStore[Key, Value]) Len() int {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	return len(m.store)
 }
 
-func (m *safeMapStore[K, V]) Upsert(key K, value V) {
+func (m *safeMapStore[Key, Value]) Upsert(key Key, value Value) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.store[key] = value
 }
 
-func (m *safeMapStore[K, V]) Iter() iter.Seq2[K, V] {
-	return func(yield func(K, V) bool) {
+func (m *safeMapStore[Key, Value]) Iter() iter.Seq2[Key, Value] {
+	return func(yield func(Key, Value) bool) {
 		m.mutex.RLock()
 		defer m.mutex.RUnlock()
 		for key, value := range m.store {
@@ -95,12 +123,12 @@ func (m *safeMapStore[K, V]) Iter() iter.Seq2[K, V] {
 	}
 }
 
-func (m *safeMapStore[K, V]) Clone() store[K, V] {
+func (m *safeMapStore[Key, Value]) Clone() Storage[Key, Value] {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	store := &safeMapStore[K, V]{
-		store: make(map[K]V, m.Len()),
+	store := &safeMapStore[Key, Value]{
+		store: make(map[Key]Value, m.Len()),
 	}
 
 	for key, value := range m.store {
@@ -110,4 +138,4 @@ func (m *safeMapStore[K, V]) Clone() store[K, V] {
 	return store
 }
 
-var _ store[string, string] = &safeMapStore[string, string]{}
+var _ Storage[string, string] = &safeMapStore[string, string]{}

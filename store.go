@@ -1,73 +1,20 @@
 package kset
 
 import (
-	"fmt"
 	"iter"
 )
 
 type (
-	store[K comparable, V any] interface {
+	Storage[Key, Value any] interface {
 		Len() int
 		Clear()
-		Delete(K)
-		Contains(K) bool
-		Get(K) (V, bool)
-		Upsert(K, V)
-		Iter() iter.Seq2[K, V]
-		Clone() store[K, V]
+		Delete(Key)
+		Contains(Key) bool
+		Get(Key) (Value, bool)
+		Upsert(Key, Value)
+		Iter() iter.Seq2[Key, Value]
+		Clone() Storage[Key, Value]
 	}
 
-	StoreType int
+	empty = struct{}
 )
-
-const (
-	StoreTypeUndefined StoreType = iota
-	// HashMap is a thread-safe hash table store implementation.
-	//	Operation		Average		WorstCase
-	//	Search			O(1)		O(logN^2)
-	//	Insert			O(1)		O(logN^2)
-	//	Delete			O(1)		O(n)
-	// Space complexity
-	//	Space			O(n)		O(n)
-	HashMap
-	// HashMapUnsafe is a thread-unsafe hash table store implementation.
-	//	Operation		Average		WorstCase
-	//	Search			O(1)		O(logN^2)
-	//	Insert			O(1)		O(logN^2)
-	//	Delete			O(1)		O(n)
-	// Space complexity
-	//	Space			O(n)		O(n)
-	HashMapUnsafe
-	// TreeMap is a thread-safe red-black tree store implementation.
-	//	Operation		Average		WorstCase
-	//	Search			O(logN)		O(logN)
-	//	Insert			O(logN)		O(logN)
-	//	Delete			O(logN)		O(logN)
-	// Space complexity
-	//	Space			O(n)		O(n)
-	TreeMap
-	// TreeMapUnsafe is a thread-unsafe red-black tree store implementation.
-	//	Operation		Average		WorstCase
-	//	Search			O(logN)		O(logN)
-	//	Insert			O(logN)		O(logN)
-	//	Delete			O(logN)		O(logN)
-	// Space complexity
-	//	Space			O(n)		O(n)
-	TreeMapUnsafe
-)
-
-var storeTypeString = map[StoreType]string{
-	HashMap:       "hashMap",
-	HashMapUnsafe: "unsafeHashMap",
-	TreeMap:       "treeMap",
-	TreeMapUnsafe: "unsafeTreeMap",
-}
-
-func (t StoreType) String() string {
-	val, ok := storeTypeString[t]
-	if ok {
-		return val
-	}
-
-	return fmt.Sprintf("invalid(%v)", int(t))
-}
