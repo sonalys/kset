@@ -206,28 +206,6 @@ func Test_KeySet_Subset(t *testing.T) {
 	})
 }
 
-func Test_KeySet_Iter(t *testing.T) {
-	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
-		set := constructor(1, 2)
-		t.Run("all values", func(t *testing.T) {
-			sum := 0
-			for value := range set.Iter() {
-				sum += value
-			}
-			assert.Equal(t, sum, 3)
-		})
-
-		t.Run("first value", func(t *testing.T) {
-			sum := 0
-			for value := range set.Iter() {
-				sum += value
-				break
-			}
-			assert.NotEqual(t, sum, 3)
-		})
-	})
-}
-
 func Test_KeySet_Len(t *testing.T) {
 	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
@@ -264,22 +242,22 @@ func Test_KeySet_Pop(t *testing.T) {
 	})
 }
 
-func Test_KeySet_Remove(t *testing.T) {
+func Test_KeySet_RemoveKeys(t *testing.T) {
 	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("empty", func(t *testing.T) {
 			set := constructor()
-			set.Remove(1)
+			set.RemoveKeys(1)
 		})
 
 		t.Run("not found", func(t *testing.T) {
 			set := constructor(1)
-			set.Remove(2)
+			set.RemoveKeys(2)
 			assert.Equal(t, 1, set.Len())
 		})
 
 		t.Run("found", func(t *testing.T) {
 			set := constructor(1)
-			set.Remove(1)
+			set.RemoveKeys(1)
 			assert.Equal(t, 0, set.Len())
 		})
 	})

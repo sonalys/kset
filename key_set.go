@@ -45,20 +45,11 @@ type KeySet[Key any] interface {
 	//  intersection := s1.Intersect(s2) // intersection is {3}
 	Intersect(other Set[Key]) KeySet[Key]
 
-	// Iter returns an iterator (iter.Seq) over the elements of the set.
-	// The order of iteration is not guaranteed.
-	// Example:
-	//  s := kset.HashMapKey(1, 2, 3)
-	//  for v := range s.Iter() {
-	//      fmt.Println(v) // Prints 1, 2, 3 in some order
-	//  }
-	Iter() iter.Seq[Key]
-
-	// Remove removes the specified elements from the set.
+	// RemoveKeys removes the specified elements from the set.
 	// Example:
 	//  s := kset.HashMapKey(1, 2, 3, 4)
-	//  s.Remove(2, 4) // s is {1, 3}
-	Remove(v ...Key)
+	//  s.RemoveKeys(2, 4) // s is {1, 3}
+	RemoveKeys(v ...Key)
 
 	// SymmetricDifference returns a new set containing elements that are in either the current set or the other set, but not both.
 	// Example:
@@ -152,13 +143,13 @@ func (k *keySet[Key, Store]) Intersects(other Set[Key]) bool {
 // Difference returns a new set with keys in this set but not in the other.
 func (k *keySet[Key, Store]) Difference(other Set[Key]) KeySet[Key] {
 	diff := k.Clone()
-	diff.Remove(slices.Collect(other.Keys())...)
+	diff.RemoveKeys(slices.Collect(other.Keys())...)
 	return diff
 }
 
 func (k *keySet[Key, Store]) DifferenceKeys(keys ...Key) KeySet[Key] {
 	diff := k.Clone()
-	diff.Remove(keys...)
+	diff.RemoveKeys(keys...)
 	return diff
 }
 
@@ -186,7 +177,7 @@ func (k *keySet[Key, Store]) Intersect(other Set[Key]) KeySet[Key] {
 		}
 	}
 
-	intersection.Remove(outerKeys...)
+	intersection.RemoveKeys(outerKeys...)
 
 	return intersection
 }
@@ -252,7 +243,7 @@ func (k *keySet[Key, Store]) Pop() (Key, bool) {
 }
 
 // Remove removes the specified keys from the set.
-func (k *keySet[Key, Store]) Remove(keys ...Key) {
+func (k *keySet[Key, Store]) RemoveKeys(keys ...Key) {
 	k.store.Delete(keys...)
 }
 
@@ -263,7 +254,7 @@ func (k *keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] 
 	innerKeys := make([]Key, 0, other.Len())
 	outerKeys := make([]Key, 0, other.Len())
 
-	for key := range other.Iter() {
+	for key := range other.Keys() {
 		if !k.ContainsKeys(key) {
 			outerKeys = append(outerKeys, key)
 			continue
@@ -271,7 +262,7 @@ func (k *keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] 
 		innerKeys = append(innerKeys, key)
 	}
 
-	sd.Remove(innerKeys...)
+	sd.RemoveKeys(innerKeys...)
 	sd.Append(outerKeys...)
 
 	return sd
@@ -289,7 +280,7 @@ func (k *keySet[Key, Store]) Slice() []Key {
 // Union returns a new set with all keys from both this set and the other.
 func (k *keySet[Key, Store]) Union(other KeySet[Key]) KeySet[Key] {
 	union := k.Clone()
-	union.Append(slices.Collect(other.Iter())...)
+	union.Append(slices.Collect(other.Keys())...)
 	return union
 }
 
