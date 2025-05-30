@@ -8,7 +8,7 @@ type (
 	Storage[Key, Value any] interface {
 		Len() int
 		Clear()
-		Delete(Key)
+		Delete(...Key)
 		Contains(Key) bool
 		Get(Key) (Value, bool)
 		Upsert(Key, Value)

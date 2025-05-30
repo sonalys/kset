@@ -28,11 +28,6 @@ func UnsafeHashMapKeyValue[Key comparable, Value any](selector func(Value) Key, 
 	return &keyValueSet[Key, Value, *unsafeMapStore[Key, Value]]{
 		store:    store,
 		selector: selector,
-		newStore: func(i int) *unsafeMapStore[Key, Value] {
-			return &unsafeMapStore[Key, Value]{
-				store: make(map[Key]Value, len(values)),
-			}
-		},
 	}
 }
 
@@ -57,11 +52,6 @@ func UnsafeHashMapKey[Key comparable](values ...Key) KeySet[Key] {
 
 	return &keySet[Key, *unsafeMapStore[Key, empty]]{
 		store: store,
-		newStore: func(k ...Key) *unsafeMapStore[Key, empty] {
-			return &unsafeMapStore[Key, empty]{
-				store: make(map[Key]empty, len(values)),
-			}
-		},
 	}
 }
 
@@ -76,8 +66,10 @@ func (m *unsafeMapStore[Key, Value]) Contains(key Key) bool {
 	return ok
 }
 
-func (m *unsafeMapStore[Key, Value]) Delete(key Key) {
-	delete(m.store, key)
+func (m *unsafeMapStore[Key, Value]) Delete(keys ...Key) {
+	for _, key := range keys {
+		delete(m.store, key)
+	}
 }
 
 func (m *unsafeMapStore[Key, Value]) Get(key Key) (Value, bool) {

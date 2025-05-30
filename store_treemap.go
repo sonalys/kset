@@ -35,11 +35,6 @@ func TreeMapKeyValue[Key constraints.Ordered, Value any](selector func(Value) Ke
 	return &keyValueSet[Key, Value, *treeMapStore[Key, Value]]{
 		store:    store,
 		selector: selector,
-		newStore: func(i int) *treeMapStore[Key, Value] {
-			return &treeMapStore[Key, Value]{
-				store: treemap.New[Key, Value](),
-			}
-		},
 	}
 }
 
@@ -64,17 +59,6 @@ func TreeMapKey[Key constraints.Ordered](keys ...Key) KeySet[Key] {
 
 	return &keySet[Key, *treeMapStore[Key, empty]]{
 		store: store,
-		newStore: func(keys ...Key) *treeMapStore[Key, empty] {
-			store := &treeMapStore[Key, empty]{
-				store: treemap.New[Key, empty](),
-			}
-
-			for _, value := range keys {
-				store.Upsert(value, empty{})
-			}
-
-			return store
-		},
 	}
 }
 
@@ -106,10 +90,13 @@ func (t *treeMapStore[Key, Value]) Contains(key Key) bool {
 	return t.store.Contains(key)
 }
 
-func (t *treeMapStore[Key, Value]) Delete(key Key) {
+func (t *treeMapStore[Key, Value]) Delete(keys ...Key) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
-	t.store.Del(key)
+
+	for _, key := range keys {
+		t.store.Del(key)
+	}
 }
 
 func (t *treeMapStore[Key, Value]) Get(key Key) (Value, bool) {

@@ -32,11 +32,6 @@ func HashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values
 	return &keyValueSet[Key, Value, *safeMapStore[Key, Value]]{
 		store:    store,
 		selector: selector,
-		newStore: func(i int) *safeMapStore[Key, Value] {
-			return &safeMapStore[Key, Value]{
-				store: make(map[Key]Value, len(values)),
-			}
-		},
 	}
 }
 
@@ -61,11 +56,6 @@ func HashMapKey[Key comparable](values ...Key) KeySet[Key] {
 
 	return &keySet[Key, *safeMapStore[Key, empty]]{
 		store: store,
-		newStore: func(k ...Key) *safeMapStore[Key, empty] {
-			return &safeMapStore[Key, empty]{
-				store: make(map[Key]empty, len(values)),
-			}
-		},
 	}
 }
 
@@ -86,10 +76,13 @@ func (m *safeMapStore[Key, Value]) Contains(key Key) bool {
 	return ok
 }
 
-func (m *safeMapStore[Key, Value]) Delete(key Key) {
+func (m *safeMapStore[Key, Value]) Delete(keys ...Key) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	delete(m.store, key)
+
+	for _, key := range keys {
+		delete(m.store, key)
+	}
 }
 
 func (m *safeMapStore[Key, Value]) Get(key Key) (Value, bool) {

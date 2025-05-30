@@ -33,11 +33,6 @@ func UnsafeTreeMapKeyValue[Key constraints.Ordered, Value any](selector func(Val
 	return &keyValueSet[Key, Value, *unsafeTreeMapStore[Key, Value]]{
 		store:    store,
 		selector: selector,
-		newStore: func(i int) *unsafeTreeMapStore[Key, Value] {
-			return &unsafeTreeMapStore[Key, Value]{
-				store: treemap.New[Key, Value](),
-			}
-		},
 	}
 }
 
@@ -62,17 +57,6 @@ func UnsafeTreeMapKey[Key constraints.Ordered](keys ...Key) KeySet[Key] {
 
 	return &keySet[Key, *unsafeTreeMapStore[Key, empty]]{
 		store: store,
-		newStore: func(keys ...Key) *unsafeTreeMapStore[Key, empty] {
-			store := &unsafeTreeMapStore[Key, empty]{
-				store: treemap.New[Key, empty](),
-			}
-
-			for _, value := range keys {
-				store.Upsert(value, empty{})
-			}
-
-			return store
-		},
 	}
 }
 
@@ -96,8 +80,10 @@ func (t *unsafeTreeMapStore[Key, Value]) Contains(key Key) bool {
 	return t.store.Contains(key)
 }
 
-func (t *unsafeTreeMapStore[Key, Value]) Delete(key Key) {
-	t.store.Del(key)
+func (t *unsafeTreeMapStore[Key, Value]) Delete(keys ...Key) {
+	for _, key := range keys {
+		t.store.Del(key)
+	}
 }
 
 func (t *unsafeTreeMapStore[Key, Value]) Get(key Key) (Value, bool) {

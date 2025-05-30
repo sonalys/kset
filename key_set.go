@@ -2,6 +2,7 @@ package kset
 
 import (
 	"iter"
+	"slices"
 )
 
 // KeySet defines a key-only set.
@@ -98,8 +99,7 @@ type KeySet[Key any] interface {
 // K is the key, must be ordered.
 // S is just a generic type parameter for removing the store abstraction and accessing the implementation directly.
 type keySet[Key any, Store Storage[Key, empty]] struct {
-	store    Store
-	newStore func(...Key) Store
+	store Store
 }
 
 // Append adds keys to the set. Returns the number of new keys added.
@@ -160,15 +160,14 @@ func (k keySet[Key, Store]) Intersects(other Set[Key]) bool {
 
 // Difference returns a new set with keys in this set but not in the other.
 func (k keySet[Key, Store]) Difference(other Set[Key]) KeySet[Key] {
-	diff := &keySet[Key, Store]{
-		store:    k.newStore(),
-		newStore: k.newStore,
-	}
-	for key := range k.store.Iter() {
-		if !other.ContainsKeys(key) {
-			diff.Append(key)
-		}
-	}
+	diff := k.Clone()
+	diff.Remove(slices.Collect(other.IterKeys())...)
+	return diff
+}
+
+func (k *keySet[Key, Store]) DifferenceKeys(keys ...Key) KeySet[Key] {
+	diff := k.Clone()
+	diff.Remove(keys...)
 	return diff
 }
 
@@ -196,16 +195,16 @@ func (k keySet[Key, Store]) Equal(other Set[Key]) bool {
 
 // Intersect returns a new set with keys common to both this set and the other.
 func (k keySet[Key, Store]) Intersect(other Set[Key]) KeySet[Key] {
-	intersection := &keySet[Key, Store]{
-		store:    k.newStore(),
-		newStore: k.newStore,
-	}
+	intersection := k.Clone()
 
+	outerKeys := make([]Key, 0, other.Len())
 	for key := range k.store.Iter() {
-		if other.ContainsKeys(key) {
-			intersection.Append(key)
+		if !other.ContainsKeys(key) {
+			outerKeys = append(outerKeys, key)
 		}
 	}
+
+	intersection.Remove(outerKeys...)
 
 	return intersection
 }
@@ -272,27 +271,24 @@ func (k keySet[Key, Store]) Pop() (Key, bool) {
 
 // Remove removes the specified keys from the set.
 func (k keySet[Key, Store]) Remove(keys ...Key) {
-	for _, key := range keys {
-		k.store.Delete(key)
-	}
+	k.store.Delete(keys...)
 }
 
 // SymmetricDifference returns a new set with keys in either this set or the other, but not both.
 func (k keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] {
-	sd := &keySet[Key, Store]{
-		store:    k.newStore(),
-		newStore: k.newStore,
-	}
-	for key := range k.store.Iter() {
-		if !other.ContainsKeys(key) {
-			sd.Append(key)
-		}
-	}
+	sd := k.Clone()
+
+	outerKeys := make([]Key, 0, other.Len())
 	for key := range other.Iter() {
 		if !k.ContainsKeys(key) {
 			sd.Append(key)
+			continue
 		}
+		outerKeys = append(outerKeys, key)
 	}
+
+	sd.Remove(outerKeys...)
+
 	return sd
 }
 

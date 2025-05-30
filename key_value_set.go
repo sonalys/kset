@@ -2,6 +2,7 @@ package kset
 
 import (
 	"iter"
+	"slices"
 )
 
 // KeyValueSet is a key-value set.
@@ -74,7 +75,7 @@ type KeyValueSet[Key, Value any] interface {
 	//  for v := range s.Iter() {
 	//      fmt.Println(v) // Prints 1, 2, 3 in some order
 	//  }
-	Iter() iter.Seq[Value]
+	Iter() iter.Seq2[Key, Value]
 
 	// Remove removes the specified elements from the set.
 	// Example:
@@ -82,6 +83,11 @@ type KeyValueSet[Key, Value any] interface {
 	//  s.Remove(2, 4) // s is {1, 3}
 	Remove(v ...Value)
 
+	// RemoveKey removes the specified keys from the set.
+	// Example:
+	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3, 4)
+	//  s.RemoveKey(2, 4) // s is {1, 3}
+	RemoveKey(v ...Key)
 
 	// SymmetricDifference returns a new set containing elements that are in either the current set or the other set, but not both.
 	// Example:
@@ -117,7 +123,6 @@ type KeyValueSet[Key, Value any] interface {
 type keyValueSet[Key, Value any, Store Storage[Key, Value]] struct {
 	store    Store
 	selector func(Value) Key
-	newStore func(int) Store
 }
 
 func (k *keyValueSet[Key, Value, Store]) Append(values ...Value) int {
@@ -193,18 +198,14 @@ func (k *keyValueSet[Key, Value, Store]) Intersects(other Set[Key]) bool {
 }
 
 func (k *keyValueSet[Key, Value, Store]) Difference(other Set[Key]) KeyValueSet[Key, Value] {
-	diff := &keyValueSet[Key, Value, Store]{
-		store:    k.newStore(k.store.Len()),
-		newStore: k.newStore,
-		selector: k.selector,
-	}
+	diff := k.Clone()
+	diff.RemoveKey(slices.Collect(other.IterKeys())...)
+	return diff
+}
 
-	for key, value := range k.store.Iter() {
-		if !other.ContainsKeys(key) {
-			diff.Append(value)
-		}
-	}
-
+func (k *keyValueSet[Key, Value, Store]) DifferenceKeys(keys ...Key) KeyValueSet[Key, Value] {
+	diff := k.Clone()
+	diff.RemoveKey(keys...)
 	return diff
 }
 
@@ -231,17 +232,18 @@ func (k *keyValueSet[Key, Value, Store]) Equal(other Set[Key]) bool {
 }
 
 func (k *keyValueSet[Key, Value, Store]) Intersect(other Set[Key]) KeyValueSet[Key, Value] {
-	intersection := &keyValueSet[Key, Value, Store]{
-		store:    k.newStore(k.store.Len()),
-		selector: k.selector,
-		newStore: k.newStore,
-	}
+	intersection := k.Clone()
 
-	for key, value := range k.store.Iter() {
-		if other.ContainsKeys(key) {
-			intersection.Append(value)
+	outerKeys := make([]Key, 0, other.Len())
+
+	for key, _ := range k.store.Iter() {
+		if !other.ContainsKeys(key) {
+			outerKeys = append(outerKeys, key)
 		}
 	}
+
+	intersection.RemoveKey(outerKeys...)
+
 	return intersection
 }
 
@@ -273,10 +275,10 @@ func (k *keyValueSet[Key, Value, Store]) IsSuperset(other Set[Key]) bool {
 	return other.IsSubset(k)
 }
 
-func (k *keyValueSet[Key, Value, Store]) Iter() iter.Seq[Value] {
-	return func(yield func(Value) bool) {
-		for _, elem := range k.store.Iter() {
-			if !yield(elem) {
+func (k *keyValueSet[Key, Value, Store]) Iter() iter.Seq2[Key, Value] {
+	return func(yield func(Key, Value) bool) {
+		for key, value := range k.store.Iter() {
+			if !yield(key, value) {
 				break
 			}
 		}
@@ -304,30 +306,30 @@ func (k *keyValueSet[Key, Value, Store]) Pop() (Value, bool) {
 }
 
 func (k *keyValueSet[Key, Value, Store]) Remove(values ...Value) {
+	keys := make([]Key, 0, len(values))
 	for _, val := range values {
-		key := k.selector(val)
-		k.store.Delete(key)
+		keys = append(keys, k.selector(val))
 	}
+	k.store.Delete(keys...)
+}
+
+func (k *keyValueSet[Key, Value, Store]) RemoveKey(keys ...Key) {
+	k.store.Delete(keys...)
 }
 
 func (k *keyValueSet[Key, Value, Store]) SymmetricDifference(other KeyValueSet[Key, Value]) KeyValueSet[Key, Value] {
-	sd := &keyValueSet[Key, Value, Store]{
-		store:    k.newStore(k.store.Len()),
-		selector: k.selector,
-		newStore: k.newStore,
+	sd := k.Clone()
+
+	outerKeys := make([]Key, 0, other.Len())
+	for key, value := range other.Iter() {
+		if !k.ContainsKeys(key) {
+			sd.Append(value)
+			continue
+		}
+		outerKeys = append(outerKeys, key)
 	}
 
-	for _, elem := range k.store.Iter() {
-		if !other.Contains(elem) {
-			sd.Append(elem)
-		}
-	}
-
-	for elem := range other.Iter() {
-		if !k.Contains(elem) {
-			sd.Append(elem)
-		}
-	}
+	sd.RemoveKey(outerKeys...)
 
 	return sd
 }
@@ -343,7 +345,7 @@ func (k *keyValueSet[Key, Value, Store]) Slice() []Value {
 func (k *keyValueSet[Key, Value, Store]) Union(other KeyValueSet[Key, Value]) KeyValueSet[Key, Value] {
 	union := k.Clone()
 
-	for elem := range other.Iter() {
+	for _, elem := range other.Iter() {
 		union.Append(elem)
 	}
 
