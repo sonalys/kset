@@ -24,16 +24,16 @@ type treeMapStore[Key constraints.Ordered, Value any] struct {
 //
 //	Space			O(n)		O(n)
 func TreeMapKeyValue[Key constraints.Ordered, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
-	store := &treeMapStore[Key, Value]{
-		store: treemap.New[Key, Value](),
-	}
+	data := treemap.New[Key, Value]()
 
 	for i := range values {
-		store.store.Set(selector(values[i]), values[i])
+		data.Set(selector(values[i]), values[i])
 	}
 
 	return &keyValueSet[Key, Value, *treeMapStore[Key, Value]]{
-		store:    store,
+		store: &treeMapStore[Key, Value]{
+			store: data,
+		},
 		selector: selector,
 	}
 }
@@ -49,16 +49,16 @@ func TreeMapKeyValue[Key constraints.Ordered, Value any](selector func(Value) Ke
 //
 //	Space			O(n)		O(n)
 func TreeMapKey[Key constraints.Ordered](keys ...Key) KeySet[Key] {
-	store := &treeMapStore[Key, empty]{
-		store: treemap.New[Key, empty](),
-	}
+	data := treemap.New[Key, empty]()
 
-	for _, value := range keys {
-		store.Upsert(value, empty{})
+	for _, key := range keys {
+		data.Set(key, empty{})
 	}
 
 	return &keySet[Key, *treeMapStore[Key, empty]]{
-		store: store,
+		store: &treeMapStore[Key, empty]{
+			store: data,
+		},
 	}
 }
 

@@ -2,6 +2,7 @@ package kset
 
 import (
 	"iter"
+	"maps"
 	"sync"
 )
 
@@ -21,16 +22,16 @@ type safeMapStore[Key comparable, Value any] struct {
 //
 //	Space			O(n)		O(n)
 func HashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
-	store := &safeMapStore[Key, Value]{
-		store: make(map[Key]Value, len(values)),
-	}
+	data := make(map[Key]Value, len(values))
 
 	for i := range values {
-		store.store[selector(values[i])] = values[i]
+		data[selector(values[i])] = values[i]
 	}
 
 	return &keyValueSet[Key, Value, *safeMapStore[Key, Value]]{
-		store:    store,
+		store: &safeMapStore[Key, Value]{
+			store: data,
+		},
 		selector: selector,
 	}
 }
@@ -46,16 +47,15 @@ func HashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values
 //
 //	Space			O(n)		O(n)
 func HashMapKey[Key comparable](values ...Key) KeySet[Key] {
-	store := &safeMapStore[Key, empty]{
-		store: make(map[Key]empty, len(values)),
-	}
-
+	data := make(map[Key]empty, len(values))
 	for _, value := range values {
-		store.Upsert(value, empty{})
+		data[value] = empty{}
 	}
 
 	return &keySet[Key, *safeMapStore[Key, empty]]{
-		store: store,
+		store: &safeMapStore[Key, empty]{
+			store: data,
+		},
 	}
 }
 
@@ -120,15 +120,9 @@ func (m *safeMapStore[Key, Value]) Clone() Storage[Key, Value] {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	store := &safeMapStore[Key, Value]{
-		store: make(map[Key]Value, m.Len()),
+	return &safeMapStore[Key, Value]{
+		store: maps.Clone(m.store),
 	}
-
-	for key, value := range m.store {
-		store.Upsert(key, value)
-	}
-
-	return store
 }
 
 var _ Storage[string, string] = &safeMapStore[string, string]{}

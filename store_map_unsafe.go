@@ -1,6 +1,9 @@
 package kset
 
-import "iter"
+import (
+	"iter"
+	"maps"
+)
 
 type unsafeMapStore[Key comparable, Value any] struct {
 	store map[Key]Value
@@ -17,16 +20,16 @@ type unsafeMapStore[Key comparable, Value any] struct {
 //
 //	Space			O(n)		O(n)
 func UnsafeHashMapKeyValue[Key comparable, Value any](selector func(Value) Key, values ...Value) KeyValueSet[Key, Value] {
-	store := &unsafeMapStore[Key, Value]{
-		store: make(map[Key]Value, len(values)),
-	}
+	data := make(map[Key]Value, len(values))
 
 	for i := range values {
-		store.store[selector(values[i])] = values[i]
+		data[selector(values[i])] = values[i]
 	}
 
 	return &keyValueSet[Key, Value, *unsafeMapStore[Key, Value]]{
-		store:    store,
+		store: &unsafeMapStore[Key, Value]{
+			store: data,
+		},
 		selector: selector,
 	}
 }
@@ -42,16 +45,15 @@ func UnsafeHashMapKeyValue[Key comparable, Value any](selector func(Value) Key, 
 //
 //	Space			O(n)		O(n)
 func UnsafeHashMapKey[Key comparable](values ...Key) KeySet[Key] {
-	store := &unsafeMapStore[Key, empty]{
-		store: make(map[Key]empty, len(values)),
-	}
-
+	data := make(map[Key]empty, len(values))
 	for _, value := range values {
-		store.Upsert(value, empty{})
+		data[value] = empty{}
 	}
 
 	return &keySet[Key, *unsafeMapStore[Key, empty]]{
-		store: store,
+		store: &unsafeMapStore[Key, empty]{
+			store: data,
+		},
 	}
 }
 
@@ -96,15 +98,9 @@ func (m *unsafeMapStore[Key, Value]) Iter() iter.Seq2[Key, Value] {
 }
 
 func (m *unsafeMapStore[Key, Value]) Clone() Storage[Key, Value] {
-	store := &unsafeMapStore[Key, Value]{
-		store: make(map[Key]Value, m.Len()),
+	return &unsafeMapStore[Key, Value]{
+		store: maps.Clone(m.store),
 	}
-
-	for key, value := range m.store {
-		store.Upsert(key, value)
-	}
-
-	return store
 }
 
 var _ Storage[string, string] = &unsafeMapStore[string, string]{}

@@ -50,23 +50,18 @@ type KeyValueSet[Key, Value any] interface {
 	//  diff := s1.Difference(s2) // diff is {1, 2}
 	Difference(other Set[Key]) KeyValueSet[Key, Value]
 
+	// DifferenceKeys returns a copy of the current set, excluding the given keys.
+	// Example:
+	//  s1 := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3)
+	//  diff := s1.DifferenceKeys(3) // diff is {1, 2}
+	DifferenceKeys(keys ...Key) KeyValueSet[Key, Value]
+
 	// Intersect returns a new set containing elements that are common to both the current set and the other set.
 	// Example:
 	//  s1 := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3)
 	//  s2 := kset.HashMapKeyValue(func(v int) int { return v }, 3, 4, 5)
 	//  intersection := s1.Intersect(s2) // intersection is {3}
 	Intersect(other Set[Key]) KeyValueSet[Key, Value]
-
-	// Each executes the given function fn for each element in the set.
-	// Iteration stops if fn returns false.
-	// Example:
-	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3)
-	//  sum := 0
-	//  s.Each(func(v int) bool {
-	//      sum += v
-	//      return true // Continue iteration
-	//  }) // sum will be 6
-	Each(fn func(Value) bool)
 
 	// Iter returns an iterator (iter.Seq) over the elements of the set.
 	// The order of iteration is not guaranteed.
@@ -83,11 +78,11 @@ type KeyValueSet[Key, Value any] interface {
 	//  s.Remove(2, 4) // s is {1, 3}
 	Remove(v ...Value)
 
-	// RemoveKey removes the specified keys from the set.
+	// RemoveKeys removes the specified keys from the set.
 	// Example:
 	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3, 4)
-	//  s.RemoveKey(2, 4) // s is {1, 3}
-	RemoveKey(v ...Key)
+	//  s.RemoveKeys(2, 4) // s is {1, 3}
+	RemoveKeys(v ...Key)
 
 	// SymmetricDifference returns a new set containing elements that are in either the current set or the other set, but not both.
 	// Example:
@@ -199,22 +194,14 @@ func (k *keyValueSet[Key, Value, Store]) Intersects(other Set[Key]) bool {
 
 func (k *keyValueSet[Key, Value, Store]) Difference(other Set[Key]) KeyValueSet[Key, Value] {
 	diff := k.Clone()
-	diff.RemoveKey(slices.Collect(other.IterKeys())...)
+	diff.RemoveKeys(slices.Collect(other.IterKeys())...)
 	return diff
 }
 
 func (k *keyValueSet[Key, Value, Store]) DifferenceKeys(keys ...Key) KeyValueSet[Key, Value] {
 	diff := k.Clone()
-	diff.RemoveKey(keys...)
+	diff.RemoveKeys(keys...)
 	return diff
-}
-
-func (k *keyValueSet[Key, Value, Store]) Each(f func(Value) bool) {
-	for _, elem := range k.store.Iter() {
-		if !f(elem) {
-			break
-		}
-	}
 }
 
 func (k *keyValueSet[Key, Value, Store]) Equal(other Set[Key]) bool {
@@ -242,7 +229,7 @@ func (k *keyValueSet[Key, Value, Store]) Intersect(other Set[Key]) KeyValueSet[K
 		}
 	}
 
-	intersection.RemoveKey(outerKeys...)
+	intersection.RemoveKeys(outerKeys...)
 
 	return intersection
 }
@@ -313,7 +300,7 @@ func (k *keyValueSet[Key, Value, Store]) Remove(values ...Value) {
 	k.store.Delete(keys...)
 }
 
-func (k *keyValueSet[Key, Value, Store]) RemoveKey(keys ...Key) {
+func (k *keyValueSet[Key, Value, Store]) RemoveKeys(keys ...Key) {
 	k.store.Delete(keys...)
 }
 
@@ -329,7 +316,7 @@ func (k *keyValueSet[Key, Value, Store]) SymmetricDifference(other KeyValueSet[K
 		outerKeys = append(outerKeys, key)
 	}
 
-	sd.RemoveKey(outerKeys...)
+	sd.RemoveKeys(outerKeys...)
 
 	return sd
 }

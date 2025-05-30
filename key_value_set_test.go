@@ -135,34 +135,6 @@ func Test_Difference(t *testing.T) {
 	})
 }
 
-func Test_Each(t *testing.T) {
-	forEachStore(t, func(t *testing.T, constructor func(selector func(int) int, values ...int) kset.KeyValueSet[int, int]) {
-		t.Run("all elements", func(t *testing.T) {
-			set := constructor(testKeyer, 1, 2)
-
-			resp := make([]int, 0, 2)
-			set.Each(func(i int) bool {
-				resp = append(resp, i)
-				return true
-			})
-
-			assert.ElementsMatch(t, []int{1, 2}, resp)
-		})
-
-		t.Run("early return", func(t *testing.T) {
-			set := constructor(testKeyer, 1, 2)
-
-			resp := make([]int, 0, 2)
-			set.Each(func(i int) bool {
-				resp = append(resp, i)
-				return false
-			})
-
-			assert.Len(t, resp, 1)
-		})
-	})
-}
-
 func Test_Equal(t *testing.T) {
 	forEachStore(t, func(t *testing.T, constructor func(selector func(int) int, values ...int) kset.KeyValueSet[int, int]) {
 		t.Run("equal", func(t *testing.T) {
