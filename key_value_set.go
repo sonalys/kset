@@ -174,12 +174,7 @@ func (k *keyValueSet[Key, Value, Store]) ContainsAny(values ...Value) bool {
 }
 
 func (k *keyValueSet[Key, Value, Store]) ContainsAnyKey(keys ...Key) bool {
-	for _, key := range keys {
-		if k.store.Contains(key) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(keys, k.store.Contains)
 }
 
 func (k *keyValueSet[Key, Value, Store]) Intersects(other Set[Key]) bool {
@@ -223,7 +218,7 @@ func (k *keyValueSet[Key, Value, Store]) Intersect(other Set[Key]) KeyValueSet[K
 
 	outerKeys := make([]Key, 0, other.Len())
 
-	for key, _ := range k.store.Iter() {
+	for key := range k.store.Iter() {
 		if !other.ContainsKeys(key) {
 			outerKeys = append(outerKeys, key)
 		}
@@ -263,13 +258,7 @@ func (k *keyValueSet[Key, Value, Store]) IsSuperset(other Set[Key]) bool {
 }
 
 func (k *keyValueSet[Key, Value, Store]) Iter() iter.Seq2[Key, Value] {
-	return func(yield func(Key, Value) bool) {
-		for key, value := range k.store.Iter() {
-			if !yield(key, value) {
-				break
-			}
-		}
-	}
+	return k.store.Iter()
 }
 
 func (k *keyValueSet[Key, Value, Store]) IterKeys() iter.Seq[Key] {
@@ -307,16 +296,19 @@ func (k *keyValueSet[Key, Value, Store]) RemoveKeys(keys ...Key) {
 func (k *keyValueSet[Key, Value, Store]) SymmetricDifference(other KeyValueSet[Key, Value]) KeyValueSet[Key, Value] {
 	sd := k.Clone()
 
-	outerKeys := make([]Key, 0, other.Len())
+	innerKeys := make([]Key, 0, other.Len())
+	outerValues := make([]Value, 0, other.Len())
+
 	for key, value := range other.Iter() {
 		if !k.ContainsKeys(key) {
-			sd.Append(value)
+			outerValues = append(outerValues, value)
 			continue
 		}
-		outerKeys = append(outerKeys, key)
+		innerKeys = append(innerKeys, key)
 	}
 
-	sd.RemoveKeys(outerKeys...)
+	sd.RemoveKeys(innerKeys...)
+	sd.Append(outerValues...)
 
 	return sd
 }
@@ -331,11 +323,7 @@ func (k *keyValueSet[Key, Value, Store]) Slice() []Value {
 
 func (k *keyValueSet[Key, Value, Store]) Union(other KeyValueSet[Key, Value]) KeyValueSet[Key, Value] {
 	union := k.Clone()
-
-	for _, elem := range other.Iter() {
-		union.Append(elem)
-	}
-
+	union.Append(other.Slice()...)
 	return union
 }
 

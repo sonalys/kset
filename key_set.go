@@ -136,12 +136,7 @@ func (k *keySet[Key, Store]) ContainsKeys(keys ...Key) bool {
 
 // ContainsAnyKey checks if any of the specified keys are present in the set.
 func (k *keySet[Key, Store]) ContainsAnyKey(keys ...Key) bool {
-	for _, key := range keys {
-		if _, ok := k.store.Get(key); ok {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(keys, k.store.Contains)
 }
 
 // Intersects checks if this set shares any keys with the other set.
@@ -265,16 +260,19 @@ func (k *keySet[Key, Store]) Remove(keys ...Key) {
 func (k *keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] {
 	sd := k.Clone()
 
+	innerKeys := make([]Key, 0, other.Len())
 	outerKeys := make([]Key, 0, other.Len())
+
 	for key := range other.Iter() {
 		if !k.ContainsKeys(key) {
-			sd.Append(key)
+			outerKeys = append(outerKeys, key)
 			continue
 		}
-		outerKeys = append(outerKeys, key)
+		innerKeys = append(innerKeys, key)
 	}
 
-	sd.Remove(outerKeys...)
+	sd.Remove(innerKeys...)
+	sd.Append(outerKeys...)
 
 	return sd
 }
@@ -291,9 +289,7 @@ func (k *keySet[Key, Store]) Slice() []Key {
 // Union returns a new set with all keys from both this set and the other.
 func (k *keySet[Key, Store]) Union(other KeySet[Key]) KeySet[Key] {
 	union := k.Clone()
-	for key := range other.Iter() {
-		union.Append(key)
-	}
+	union.Append(slices.Collect(other.Iter())...)
 	return union
 }
 
