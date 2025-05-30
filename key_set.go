@@ -152,7 +152,7 @@ func (k *keySet[Key, Store]) Intersects(other Set[Key]) bool {
 // Difference returns a new set with keys in this set but not in the other.
 func (k *keySet[Key, Store]) Difference(other Set[Key]) KeySet[Key] {
 	diff := k.Clone()
-	diff.Remove(slices.Collect(other.IterKeys())...)
+	diff.Remove(slices.Collect(other.Keys())...)
 	return diff
 }
 
@@ -236,7 +236,7 @@ func (k *keySet[Key, Store]) Iter() iter.Seq[Key] {
 }
 
 // Iter returns an iterator for the keys in the set.
-func (k *keySet[Key, Store]) IterKeys() iter.Seq[Key] {
+func (k *keySet[Key, Store]) Keys() iter.Seq[Key] {
 	return k.Iter()
 }
 

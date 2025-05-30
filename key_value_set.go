@@ -63,14 +63,14 @@ type KeyValueSet[Key, Value any] interface {
 	//  intersection := s1.Intersect(s2) // intersection is {3}
 	Intersect(other Set[Key]) KeyValueSet[Key, Value]
 
-	// Iter returns an iterator (iter.Seq) over the elements of the set.
+	// KeyValues returns an iterator (iter.Seq) over the elements of the set.
 	// The order of iteration is not guaranteed.
 	// Example:
 	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 1, 2, 3)
-	//  for v := range s.Iter() {
+	//  for v := range s.KeyValues() {
 	//      fmt.Println(v) // Prints 1, 2, 3 in some order
 	//  }
-	Iter() iter.Seq2[Key, Value]
+	KeyValues() iter.Seq2[Key, Value]
 
 	// Remove removes the specified elements from the set.
 	// Example:
@@ -189,7 +189,7 @@ func (k *keyValueSet[Key, Value, Store]) Intersects(other Set[Key]) bool {
 
 func (k *keyValueSet[Key, Value, Store]) Difference(other Set[Key]) KeyValueSet[Key, Value] {
 	diff := k.Clone()
-	diff.RemoveKeys(slices.Collect(other.IterKeys())...)
+	diff.RemoveKeys(slices.Collect(other.Keys())...)
 	return diff
 }
 
@@ -257,11 +257,11 @@ func (k *keyValueSet[Key, Value, Store]) IsSuperset(other Set[Key]) bool {
 	return other.IsSubset(k)
 }
 
-func (k *keyValueSet[Key, Value, Store]) Iter() iter.Seq2[Key, Value] {
+func (k *keyValueSet[Key, Value, Store]) KeyValues() iter.Seq2[Key, Value] {
 	return k.store.Iter()
 }
 
-func (k *keyValueSet[Key, Value, Store]) IterKeys() iter.Seq[Key] {
+func (k *keyValueSet[Key, Value, Store]) Keys() iter.Seq[Key] {
 	return func(yield func(Key) bool) {
 		for key := range k.store.Iter() {
 			if !yield(key) {
@@ -299,7 +299,7 @@ func (k *keyValueSet[Key, Value, Store]) SymmetricDifference(other KeyValueSet[K
 	innerKeys := make([]Key, 0, other.Len())
 	outerValues := make([]Value, 0, other.Len())
 
-	for key, value := range other.Iter() {
+	for key, value := range other.KeyValues() {
 		if !k.ContainsKeys(key) {
 			outerValues = append(outerValues, value)
 			continue

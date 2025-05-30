@@ -215,7 +215,7 @@ func Test_Iter(t *testing.T) {
 		set := constructor(testKeyer, 1, 2)
 		t.Run("all values", func(t *testing.T) {
 			sum := 0
-			for value := range set.Iter() {
+			for value := range set.KeyValues() {
 				sum += value
 			}
 			assert.Equal(t, sum, 3)
@@ -223,7 +223,7 @@ func Test_Iter(t *testing.T) {
 
 		t.Run("first value", func(t *testing.T) {
 			sum := 0
-			for value := range set.Iter() {
+			for value := range set.KeyValues() {
 				sum += value
 				break
 			}
