@@ -8,7 +8,7 @@ import (
 // KeyValueSet is a key-value set.
 // It performs mathematical set operations on a batch of values.
 // It uses from a selector to extract keys from any given value.
-// The underlying data structure used for the set is selected on the initializer.
+// The underlying data structure used for the set is dependable on the used constructor.
 type KeyValueSet[Key, Value any] interface {
 	Set[Key]
 

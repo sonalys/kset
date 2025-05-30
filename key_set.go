@@ -6,6 +6,8 @@ import (
 )
 
 // KeySet defines a key-only set.
+// It performs mathematical set operations on a batch of values.
+// The underlying data structure used for the set is dependable on the used constructor.
 type KeySet[Key any] interface {
 	Set[Key]
 
