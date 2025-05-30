@@ -105,12 +105,12 @@ type KeyValueSet[Key, Value any] interface {
 	//  v, ok = s.Pop() // v is 0, ok is false
 	Pop() (Value, bool)
 
-	// ToSlice returns a slice containing all elements of the set.
+	// Slice returns a slice containing all elements of the set.
 	// The order of elements in the slice is not guaranteed.
 	// Example:
 	//  s := NewPrimitive(3, 1, 2)
-	//  slice := s.ToSlice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
-	ToSlice() []Value
+	//  slice := s.Slice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
+	Slice() []Value
 }
 
 type keyValueSet[Key, Value any, Store Storage[Key, Value]] struct {
@@ -331,7 +331,7 @@ func (k *keyValueSet[Key, Value, Store]) SymmetricDifference(other KeyValueSet[K
 	return sd
 }
 
-func (k *keyValueSet[Key, Value, Store]) ToSlice() []Value {
+func (k *keyValueSet[Key, Value, Store]) Slice() []Value {
 	result := make([]Value, 0, k.Len())
 	for _, elem := range k.store.Iter() {
 		result = append(result, elem)

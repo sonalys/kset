@@ -119,14 +119,14 @@ func Test_KeySet_Difference(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
 
-			assert.ElementsMatch(t, []int{1}, set1.Difference(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1}, set1.Difference(set2).Slice())
 		})
 
 		t.Run("not intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(3, 4)
 
-			assert.ElementsMatch(t, []int{1, 2}, set1.Difference(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1, 2}, set1.Difference(set2).Slice())
 		})
 	})
 }
@@ -183,14 +183,14 @@ func Test_KeySet_Intersect(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
 
-			assert.ElementsMatch(t, []int{2}, set1.Intersect(set2).ToSlice())
+			assert.ElementsMatch(t, []int{2}, set1.Intersect(set2).Slice())
 		})
 
 		t.Run("not intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(3, 4)
 
-			assert.Empty(t, set1.Intersect(set2).ToSlice())
+			assert.Empty(t, set1.Intersect(set2).Slice())
 		})
 	})
 }
@@ -319,23 +319,23 @@ func Test_KeySet_SymmetricDifference(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
 
-			assert.ElementsMatch(t, []int{1, 3}, set1.SymmetricDifference(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1, 3}, set1.SymmetricDifference(set2).Slice())
 		})
 
 		t.Run("not intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(3, 4)
 
-			assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.SymmetricDifference(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.SymmetricDifference(set2).Slice())
 		})
 	})
 }
 
-func Test_KeySet_ToSlice(t *testing.T) {
+func Test_KeySet_Slice(t *testing.T) {
 	forEachStoreK(t, func(t *testing.T, constructor func(values ...int) kset.KeySet[int]) {
 		t.Run("not empty", func(t *testing.T) {
 			set := constructor(1)
-			assert.Equal(t, []int{1}, set.ToSlice())
+			assert.Equal(t, []int{1}, set.Slice())
 		})
 	})
 }
@@ -346,14 +346,14 @@ func Test_KeySet_Union(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(2, 3)
 
-			assert.ElementsMatch(t, []int{1, 2, 3}, set1.Union(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1, 2, 3}, set1.Union(set2).Slice())
 		})
 
 		t.Run("not intersects", func(t *testing.T) {
 			set1 := constructor(1, 2)
 			set2 := constructor(3, 4)
 
-			assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.Union(set2).ToSlice())
+			assert.ElementsMatch(t, []int{1, 2, 3, 4}, set1.Union(set2).Slice())
 		})
 	})
 }

@@ -25,7 +25,7 @@ func ExampleHashMapKeyValue() {
 	addedCount := userSet.Append(User{ID: 1, Name: "Alice Smith"})
 	fmt.Printf("Added: %v\n", addedCount)
 
-	elements := userSet.ToSlice()
+	elements := userSet.Slice()
 	slices.SortFunc(elements, func(a, b User) int {
 		return a.ID - b.ID
 	})
@@ -44,7 +44,7 @@ func ExampleTreeMapKey() {
 		return slice
 	}
 
-	fmt.Printf("Set: %v\n", sortSlice(setA.ToSlice()))
+	fmt.Printf("Set: %v\n", sortSlice(setA.Slice()))
 	fmt.Printf("Length: %d\n", setA.Len())
 	fmt.Printf("Contains 2? %t\n", setA.ContainsKeys(2))
 	fmt.Printf("Contains 4? %t\n", setA.ContainsKeys(4))
@@ -59,11 +59,11 @@ func ExampleTreeMapKey() {
 	difference := setA.Difference(setB)
 	symDifference := setA.SymmetricDifference(setB)
 
-	fmt.Printf("Other Set: %v\n", sortSlice(setB.ToSlice()))
-	fmt.Printf("Union: %v\n", sortSlice(union.ToSlice()))
-	fmt.Printf("Intersection: %v\n", sortSlice(intersection.ToSlice()))
-	fmt.Printf("Difference (setA - setB): %v\n", sortSlice(difference.ToSlice()))
-	fmt.Printf("Symmetric Difference: %v\n", sortSlice(symDifference.ToSlice()))
+	fmt.Printf("Other Set: %v\n", sortSlice(setB.Slice()))
+	fmt.Printf("Union: %v\n", sortSlice(union.Slice()))
+	fmt.Printf("Intersection: %v\n", sortSlice(intersection.Slice()))
+	fmt.Printf("Difference (setA - setB): %v\n", sortSlice(difference.Slice()))
+	fmt.Printf("Symmetric Difference: %v\n", sortSlice(symDifference.Slice()))
 
 	// Output:
 	// Set: [1 2 3]

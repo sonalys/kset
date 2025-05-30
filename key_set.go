@@ -86,12 +86,12 @@ type KeySet[Key any] interface {
 	//  v, ok = s.Pop() // v is 0, ok is false
 	Pop() (Key, bool)
 
-	// ToSlice returns a slice containing all elements of the set.
+	// Slice returns a slice containing all elements of the set.
 	// The order of elements in the slice is not guaranteed.
 	// Example:
 	//  s := NewPrimitive(3, 1, 2)
-	//  slice := s.ToSlice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
-	ToSlice() []Key
+	//  slice := s.Slice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
+	Slice() []Key
 }
 
 // keySet is an implementation of KeySet.
@@ -296,8 +296,8 @@ func (k keySet[Key, Store]) SymmetricDifference(other KeySet[Key]) KeySet[Key] {
 	return sd
 }
 
-// ToSlice returns a slice containing all the keys in the set. The order is not guaranteed.
-func (k keySet[Key, Store]) ToSlice() []Key {
+// Slice returns a slice containing all the keys in the set. The order is not guaranteed.
+func (k keySet[Key, Store]) Slice() []Key {
 	result := make([]Key, 0, k.Len())
 	for key := range k.store.Iter() {
 		result = append(result, key)
