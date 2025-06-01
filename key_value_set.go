@@ -2,6 +2,7 @@ package kset
 
 import (
 	"iter"
+	"maps"
 	"slices"
 )
 
@@ -9,7 +10,7 @@ import (
 // It performs mathematical set operations on a batch of values.
 // It uses from a selector to extract keys from any given value.
 // The underlying data structure used for the set is dependable on the used constructor.
-type KeyValueSet[Key, Value any] interface {
+type KeyValueSet[Key comparable, Value any] interface {
 	Set[Key]
 
 	// Append upserts multiple elements to the set.
@@ -113,9 +114,15 @@ type KeyValueSet[Key, Value any] interface {
 	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 3, 1, 2)
 	//  slice := s.Slice() // slice could be []int{1, 2, 3}, []int{3, 1, 2}, etc.
 	Slice() []Value
+
+	// Map returns a map representation of the set.
+	// Example:
+	//  s := kset.HashMapKeyValue(func(v int) int { return v }, 3, 1, 2)
+	//  m := s.Map() // m returns map[int]int{ 1:1, 2:2, 3:3 }
+	Map() map[Key]Value
 }
 
-type keyValueSet[Key, Value any, Store Storage[Key, Value]] struct {
+type keyValueSet[Key comparable, Value any, Store Storage[Key, Value]] struct {
 	store    Store
 	selector func(Value) Key
 }
@@ -319,6 +326,10 @@ func (k *keyValueSet[Key, Value, Store]) Slice() []Value {
 		result = append(result, elem)
 	}
 	return result
+}
+
+func (k *keyValueSet[Key, Value, Store]) Map() map[Key]Value {
+	return maps.Collect(k.store.Iter())
 }
 
 func (k *keyValueSet[Key, Value, Store]) Union(other KeyValueSet[Key, Value]) KeyValueSet[Key, Value] {
