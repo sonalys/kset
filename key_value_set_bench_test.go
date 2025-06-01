@@ -6,7 +6,7 @@ import (
 	"github.com/sonalys/kset"
 )
 
-func BenchmarkHashMapKeyValue_DifferenceKeys(b *testing.B) {
+func BenchmarkHashMapKeyValue_Clone(b *testing.B) {
 	// Difference scales with o(n) as it copies the whole set.
 	runBenchmark := func(size int) func(b *testing.B) {
 		data := setupData(size)
@@ -14,7 +14,7 @@ func BenchmarkHashMapKeyValue_DifferenceKeys(b *testing.B) {
 		return func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				set.DifferenceKeys(1)
+				set.Clone()
 			}
 		}
 	}
@@ -28,10 +28,10 @@ func BenchmarkHashMapKeyValue_DifferenceKeys(b *testing.B) {
 	// goarch: amd64
 	// pkg: github.com/sonalys/kset
 	// cpu: AMD Ryzen 9 5950X 16-Core Processor
-	// BenchmarkHashMapKeyValue_DifferenceKeys/10-32 	 1868337	       641.8 ns/op	     432 B/op	       7 allocs/op
-	// BenchmarkHashMapKeyValue_DifferenceKeys/100-32         	  312880	      3672 ns/op	    2448 B/op	       7 allocs/op
-	// BenchmarkHashMapKeyValue_DifferenceKeys/1000-32        	   31053	     38714 ns/op	   37048 B/op	       9 allocs/op
-	// BenchmarkHashMapKeyValue_DifferenceKeys/10000-32       	    2853	    421953 ns/op	  295661 B/op	      37 allocs/op
+	// BenchmarkHashMapKeyValue_Clone/10-32 	 1868337	       641.8 ns/op	     432 B/op	       7 allocs/op
+	// BenchmarkHashMapKeyValue_Clone/100-32         	  312880	      3672 ns/op	    2448 B/op	       7 allocs/op
+	// BenchmarkHashMapKeyValue_Clone/1000-32        	   31053	     38714 ns/op	   37048 B/op	       9 allocs/op
+	// BenchmarkHashMapKeyValue_Clone/10000-32       	    2853	    421953 ns/op	  295661 B/op	      37 allocs/op
 }
 
 func BenchmarkHashMapKeyValue_1000(b *testing.B) {

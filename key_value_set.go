@@ -189,7 +189,7 @@ func (k *keyValueSet[Key, Value, Store]) Intersects(other Set[Key]) bool {
 
 func (k *keyValueSet[Key, Value, Store]) Difference(other Set[Key]) KeyValueSet[Key, Value] {
 	diff := k.Clone()
-	diff.RemoveKeys(slices.Collect(other.Keys())...)
+	diff.RemoveKeys(bufferedCollect(other.Keys(), other.Len())...)
 	return diff
 }
 

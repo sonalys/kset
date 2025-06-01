@@ -145,7 +145,7 @@ func (k *keySet[Key, Store]) Intersects(other Set[Key]) bool {
 // Difference returns a new set with keys in this set but not in the other.
 func (k *keySet[Key, Store]) Difference(other Set[Key]) KeySet[Key] {
 	diff := k.Clone()
-	diff.RemoveKeys(slices.Collect(other.Keys())...)
+	diff.RemoveKeys(bufferedCollect(other.Keys(), other.Len())...)
 	return diff
 }
 
